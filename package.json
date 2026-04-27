@@ -1,5 +1,5 @@
 {
-  "name": "registry",
+  "name": "border-beam",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "registry:build": "shadcn build"
+    "registry:build": "node scripts/generate-css.mjs && shadcn build",
+    "generate:css": "node scripts/generate-css.mjs"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",

@@ -1,80 +1,39 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry.json",
-  "name": "acme",
-  "homepage": "https://acme.com",
+  "name": "border-beam",
+  "homepage": "https://github.com/FradSer/border-beam",
   "items": [
     {
-      "name": "hello-world",
-      "type": "registry:component",
-      "title": "Hello World",
-      "description": "A simple hello world component",
-      "registryDependencies": ["button"],
+      "name": "border-beam",
+      "type": "registry:ui",
+      "title": "Border Beam",
+      "description": "Animated border beam effect using CSS Houdini @property and conic-gradient. Refactored from Jakubantalik/border-beam (MIT) into static, registry-native CSS — no runtime style injection, no per-instance @property, no npm dependency.",
       "files": [
         {
-          "path": "registry/new-york/blocks/hello-world/hello-world.tsx",
-          "type": "registry:component"
+          "path": "registry/new-york/ui/border-beam.tsx",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/ui/border-beam.css",
+          "type": "registry:ui"
         }
-      ]
-    },
-    {
-      "name": "example-form",
-      "type": "registry:component",
-      "title": "Example Form",
-      "description": "A contact form with Zod validation.",
-      "dependencies": ["zod"],
-      "registryDependencies": ["button", "input", "label", "textarea", "card"],
-      "files": [
-        {
-          "path": "registry/new-york/blocks/example-form/example-form.tsx",
-          "type": "registry:component"
+      ],
+      "cssVars": {
+        "light": {
+          "beam-stroke-opacity": "0.33",
+          "beam-inner-opacity": "0.46",
+          "beam-bloom-opacity": "0.54",
+          "beam-saturation": "0.96",
+          "beam-inner-shadow": "rgba(0, 0, 0, 0.14)"
+        },
+        "dark": {
+          "beam-stroke-opacity": "0.48",
+          "beam-inner-opacity": "0.7",
+          "beam-bloom-opacity": "0.8",
+          "beam-saturation": "1.2",
+          "beam-inner-shadow": "rgba(255, 255, 255, 0.27)"
         }
-      ]
-    },
-    {
-      "name": "complex-component",
-      "type": "registry:component",
-      "title": "Complex Component",
-      "description": "A complex component showing hooks, libs and components.",
-      "registryDependencies": ["card"],
-      "files": [
-        {
-          "path": "registry/new-york/blocks/complex-component/page.tsx",
-          "type": "registry:page",
-          "target": "app/pokemon/page.tsx"
-        },
-        {
-          "path": "registry/new-york/blocks/complex-component/components/pokemon-card.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "registry/new-york/blocks/complex-component/components/pokemon-image.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "registry/new-york/blocks/complex-component/lib/pokemon.ts",
-          "type": "registry:lib"
-        },
-        {
-          "path": "registry/new-york/blocks/complex-component/hooks/use-pokemon.ts",
-          "type": "registry:hook"
-        }
-      ]
-    },
-    {
-      "name": "example-with-css",
-      "type": "registry:component",
-      "title": "Example with CSS",
-      "description": "A login form with a CSS file.",
-      "files": [
-        {
-          "path": "registry/new-york/blocks/example-with-css/example-card.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "registry/new-york/blocks/example-with-css/example-card.css",
-          "type": "registry:component"
-        }
-      ]
+      }
     }
   ]
 }
