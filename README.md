@@ -34,6 +34,45 @@ The component wraps its children. Border radius is auto-detected from the
 first child's computed `border-top-left-radius`, or you can pass
 `borderRadius` explicitly.
 
+## Pre-wrapped variants
+
+Ready-to-use combinations of `BorderBeam` with the canonical shadcn
+primitives. Each one installs the underlying primitive (from the official
+shadcn registry) plus `border-beam.tsx` + `border-beam.css`:
+
+```bash
+npx shadcn@latest add https://border-beam.vercel.app/r/border-beam-card.json
+```
+
+| Item                   | Wraps shadcn | Default beam size |
+| ---------------------- | ------------ | ----------------- |
+| `border-beam-button`   | Button       | `sm`              |
+| `border-beam-card`     | Card         | `md`              |
+| `border-beam-input`    | Input        | `sm`              |
+| `border-beam-textarea` | Textarea     | `md`              |
+
+Each accepts the underlying primitive's full prop signature plus four
+beam-specific props (prefixed `beam*` so they never collide with primitive
+props like Button's `size`):
+
+| Prop               | Default      |
+| ------------------ | ------------ |
+| `beamSize`         | per-component |
+| `beamColorVariant` | `'colorful'` |
+| `beamActive`       | `true`       |
+| `beamClassName`    | –            |
+
+```tsx
+import { BorderBeamCard } from "@/components/ui/border-beam-card"
+
+<BorderBeamCard beamColorVariant="ocean">
+  <CardHeader>
+    <CardTitle>Hello</CardTitle>
+  </CardHeader>
+  <CardContent>Glowing card content.</CardContent>
+</BorderBeamCard>
+```
+
 ## Props
 
 | Prop | Type | Default | Description |

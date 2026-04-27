@@ -1,12 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { Moon, Sun } from "lucide-react"
 
 import {
   BorderBeam,
   type BorderBeamColorVariant,
   type BorderBeamSize,
-} from "@/registry/new-york/ui/border-beam"
+} from "@/components/ui/border-beam"
+import { BorderBeamButton } from "@/registry/new-york/ui/border-beam-button"
+import { BorderBeamCard } from "@/registry/new-york/ui/border-beam-card"
+import { BorderBeamInput } from "@/registry/new-york/ui/border-beam-input"
+import { BorderBeamTextarea } from "@/registry/new-york/ui/border-beam-textarea"
 
 const VARIANTS: BorderBeamColorVariant[] = [
   "colorful",
@@ -16,27 +21,68 @@ const VARIANTS: BorderBeamColorVariant[] = [
 ]
 const SIZES: BorderBeamSize[] = ["sm", "md"]
 
+function useTheme() {
+  const [theme, setTheme] = useState<"light" | "dark">("dark")
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") as "light" | "dark" | null
+    const initial =
+      stored ??
+      (window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light")
+    setTheme(initial)
+    document.documentElement.classList.toggle("dark", initial === "dark")
+  }, [])
+
+  const toggle = useCallback(() => {
+    setTheme((cur) => {
+      const next = cur === "dark" ? "light" : "dark"
+      localStorage.setItem("theme", next)
+      document.documentElement.classList.toggle("dark", next === "dark")
+      return next
+    })
+  }, [])
+
+  return { theme, toggle }
+}
+
 export default function Home() {
+  const { theme, toggle } = useTheme()
   const [active, setActive] = useState(true)
   const [count, setCount] = useState(0)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">border-beam</h1>
-        <p className="text-muted-foreground">
-          Animated border beam, distributed as a shadcn registry. Static CSS,
-          no runtime style injection, no per-instance@property names.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Install:{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-foreground">
-            npx shadcn@latest add https://border-beam.vercel.app/r/border-beam.json
-          </code>
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">border-beam</h1>
+          <p className="text-muted-foreground">
+            Animated border beam, distributed as a shadcn registry. Static CSS,
+            no runtime style injection, no per-instance @property names.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Install:{" "}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-foreground">
+              npx shadcn@latest add
+              https://border-beam.vercel.app/r/border-beam.json
+            </code>
+          </p>
+        </div>
+        <button
+          onClick={toggle}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+          className="shrink-0 size-9 inline-flex items-center justify-center rounded-md border bg-background hover:bg-muted"
+        >
+          {theme === "dark" ? (
+            <Sun className="size-4" />
+          ) : (
+            <Moon className="size-4" />
+          )}
+        </button>
       </header>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={() => setActive(!active)}
           className="px-3 py-1.5 rounded-md border bg-background text-sm hover:bg-muted"
@@ -50,15 +96,15 @@ export default function Home() {
           Add instance ({count})
         </button>
         <span className="text-xs text-muted-foreground">
-          Toggle to verify fade-in/fade-out; add instances to verify each beam
-          rotates independently.
+          Toggle theme top-right; activate/deactivate to verify fade animations;
+          add instances to verify each beam rotates independently.
         </span>
       </div>
 
       {SIZES.map((size) => (
         <section key={size} className="space-y-3">
           <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            size: {size}
+            BorderBeam — size: {size}
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {VARIANTS.map((v) => (
@@ -80,6 +126,82 @@ export default function Home() {
           </div>
         </section>
       ))}
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          BorderBeamButton — beam size: sm
+        </h2>
+        <div className="flex flex-wrap gap-4">
+          {VARIANTS.map((v) => (
+            <BorderBeamButton
+              key={v}
+              beamColorVariant={v}
+              beamActive={active}
+              size="lg"
+            >
+              {v}
+            </BorderBeamButton>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          BorderBeamCard — beam size: md
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {VARIANTS.map((v) => (
+            <BorderBeamCard
+              key={v}
+              beamColorVariant={v}
+              beamActive={active}
+              beamClassName="block"
+            >
+              <div className="px-6 text-sm">
+                <div className="font-medium">{v}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Card with border-beam
+                </div>
+              </div>
+            </BorderBeamCard>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          BorderBeamInput — beam size: sm
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {VARIANTS.map((v) => (
+            <BorderBeamInput
+              key={v}
+              beamColorVariant={v}
+              beamActive={active}
+              beamClassName="block"
+              placeholder={`${v} input`}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          BorderBeamTextarea — beam size: md
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {VARIANTS.map((v) => (
+            <BorderBeamTextarea
+              key={v}
+              beamColorVariant={v}
+              beamActive={active}
+              beamClassName="block"
+              placeholder={`${v} textarea`}
+              rows={3}
+            />
+          ))}
+        </div>
+      </section>
 
       {count > 0 ? (
         <section className="space-y-3">
