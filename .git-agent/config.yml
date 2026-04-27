@@ -1,0 +1,13 @@
+scopes:
+    - name: app
+      description: Next.js application pages, layout, and global styles in app/; does not include shared components or utilities.
+    - name: components
+      description: Component definitions and metadata in components/; does not contain UI library or registry blocks.
+    - name: lib
+      description: Utility functions and helper modules in lib/; does not include UI or registry-specific code.
+    - name: public
+      description: Static assets and public JSON resources in public/; does not cover registry blocks or internal code.
+    - name: registry
+      description: Registry blocks, UI elements, hooks, and registry-specific lib in registry/; does not cover app or public assets.
+    - name: scripts
+      description: Build, generation, and CI scripts in scripts/; does not include application or registry logic.
