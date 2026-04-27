@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "border-beam-button",
+  "type": "registry:ui",
+  "title": "Border Beam Button",
+  "description": "shadcn Button pre-wrapped with the border-beam effect. Defaults to beam size 'sm'.",
+  "registryDependencies": [
+    "button",
+    "https://border-beam.vercel.app/r/border-beam.json"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/ui/border-beam-button.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\n\nimport { Button } from \"@/components/ui/button\"\nimport {\n  BorderBeam,\n  type BorderBeamColorVariant,\n  type BorderBeamSize,\n} from \"@/components/ui/border-beam\"\n\nexport interface BorderBeamButtonProps\n  extends React.ComponentProps<typeof Button> {\n  beamSize?: BorderBeamSize\n  beamColorVariant?: BorderBeamColorVariant\n  beamActive?: boolean\n  beamClassName?: string\n}\n\nexport function BorderBeamButton({\n  beamSize = \"sm\",\n  beamColorVariant = \"colorful\",\n  beamActive = true,\n  beamClassName,\n  ...props\n}: BorderBeamButtonProps) {\n  return (\n    <BorderBeam\n      size={beamSize}\n      colorVariant={beamColorVariant}\n      active={beamActive}\n      className={beamClassName}\n    >\n      <Button {...props} />\n    </BorderBeam>\n  )\n}\n",
+      "type": "registry:ui"
+    }
+  ]
+}

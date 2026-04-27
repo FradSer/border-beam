@@ -34,6 +34,70 @@
           "beam-inner-shadow": "rgba(255, 255, 255, 0.27)"
         }
       }
+    },
+    {
+      "name": "border-beam-button",
+      "type": "registry:ui",
+      "title": "Border Beam Button",
+      "description": "shadcn Button pre-wrapped with the border-beam effect. Defaults to beam size 'sm'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-button.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "button",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-card",
+      "type": "registry:ui",
+      "title": "Border Beam Card",
+      "description": "shadcn Card pre-wrapped with the border-beam effect. Defaults to beam size 'md'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-card.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "card",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-input",
+      "type": "registry:ui",
+      "title": "Border Beam Input",
+      "description": "shadcn Input pre-wrapped with the border-beam effect. Defaults to beam size 'sm'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-input.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "input",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-textarea",
+      "type": "registry:ui",
+      "title": "Border Beam Textarea",
+      "description": "shadcn Textarea pre-wrapped with the border-beam effect. Defaults to beam size 'md'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-textarea.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "textarea",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
     }
   ]
 }
