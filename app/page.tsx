@@ -7,6 +7,7 @@ import {
   BorderBeam,
   type BorderBeamColorVariant,
   type BorderBeamSize,
+  type BorderBeamTheme,
 } from "@/components/ui/border-beam"
 import { BorderBeamButton } from "@/registry/new-york/ui/border-beam-button"
 import { BorderBeamCard } from "@/registry/new-york/ui/border-beam-card"
@@ -19,7 +20,8 @@ const VARIANTS: BorderBeamColorVariant[] = [
   "ocean",
   "sunset",
 ]
-const SIZES: BorderBeamSize[] = ["sm", "md"]
+const SIZES: BorderBeamSize[] = ["sm", "md", "line"]
+const THEMES: BorderBeamTheme[] = ["dark", "light", "auto"]
 
 function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark">("dark")
@@ -50,6 +52,7 @@ function useTheme() {
 export default function Home() {
   const { theme, toggle } = useTheme()
   const [active, setActive] = useState(true)
+  const [beamTheme, setBeamTheme] = useState<BorderBeamTheme>("dark")
   const [count, setCount] = useState(0)
 
   return (
@@ -58,8 +61,10 @@ export default function Home() {
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">border-beam</h1>
           <p className="text-muted-foreground">
-            Animated border beam, distributed as a shadcn registry. Static CSS,
-            no runtime style injection, no per-instance @property names.
+            Animated border beam distributed as a shadcn registry. Static CSS,
+            no runtime style injection. Supports border (sm/md) and line
+            (bottom-only traveling glow) variants with per-component theme
+            control.
           </p>
           <p className="text-xs text-muted-foreground">
             Install:{" "}
@@ -95,9 +100,20 @@ export default function Home() {
         >
           Add instance ({count})
         </button>
+        <select
+          value={beamTheme}
+          onChange={(e) => setBeamTheme(e.target.value as BorderBeamTheme)}
+          className="px-3 py-1.5 rounded-md border bg-background text-sm"
+        >
+          {THEMES.map((t) => (
+            <option key={t} value={t}>
+              theme: {t}
+            </option>
+          ))}
+        </select>
         <span className="text-xs text-muted-foreground">
-          Toggle theme top-right; activate/deactivate to verify fade animations;
-          add instances to verify each beam rotates independently.
+          Toggle theme top-right; use theme selector for per-component
+          control; add instances to verify independent rotation.
         </span>
       </div>
 
@@ -113,6 +129,7 @@ export default function Home() {
                 size={size}
                 colorVariant={v}
                 active={active}
+                theme={beamTheme}
                 className="block"
               >
                 <div className="bg-card text-card-foreground rounded-2xl px-6 py-10 text-center">
@@ -137,6 +154,7 @@ export default function Home() {
               key={v}
               beamColorVariant={v}
               beamActive={active}
+              beamTheme={beamTheme}
               size="lg"
             >
               {v}
@@ -155,6 +173,7 @@ export default function Home() {
               key={v}
               beamColorVariant={v}
               beamActive={active}
+              beamTheme={beamTheme}
               beamClassName="block"
             >
               <div className="px-6 text-sm">
@@ -178,6 +197,7 @@ export default function Home() {
               key={v}
               beamColorVariant={v}
               beamActive={active}
+              beamTheme={beamTheme}
               beamClassName="block"
               placeholder={`${v} input`}
             />
@@ -195,6 +215,7 @@ export default function Home() {
               key={v}
               beamColorVariant={v}
               beamActive={active}
+              beamTheme={beamTheme}
               beamClassName="block"
               placeholder={`${v} textarea`}
               rows={3}
@@ -215,6 +236,7 @@ export default function Home() {
                 size="md"
                 colorVariant={VARIANTS[i % VARIANTS.length]}
                 active={active}
+                theme={beamTheme}
                 className="block"
               >
                 <div className="bg-card text-card-foreground rounded-2xl px-6 py-10 text-center">
