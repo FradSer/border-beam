@@ -7,7 +7,7 @@
       "name": "border-beam",
       "type": "registry:ui",
       "title": "Border Beam",
-      "description": "Animated border beam effect using CSS Houdini @property and conic-gradient. Refactored from Jakubantalik/border-beam (MIT) into static, registry-native CSS — no runtime style injection, no per-instance @property, no npm dependency.",
+      "description": "Animated border beam effect using CSS Houdini @property and conic-gradient. Supports border (sm/md) and line (bottom-only traveling glow) size variants with per-component theme control (dark/light/auto). Refactored from Jakubantalik/border-beam (MIT) into static, registry-native CSS — no runtime style injection, no npm dependency.",
       "files": [
         {
           "path": "registry/new-york/ui/border-beam.tsx",

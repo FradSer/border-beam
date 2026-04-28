@@ -7,12 +7,14 @@ import {
   BorderBeam,
   type BorderBeamColorVariant,
   type BorderBeamSize,
+  type BorderBeamTheme,
 } from "@/components/ui/border-beam"
 
 export interface BorderBeamInputProps
   extends React.ComponentProps<typeof Input> {
   beamSize?: BorderBeamSize
   beamColorVariant?: BorderBeamColorVariant
+  beamTheme?: BorderBeamTheme
   beamActive?: boolean
   beamClassName?: string
 }
@@ -20,6 +22,7 @@ export interface BorderBeamInputProps
 export function BorderBeamInput({
   beamSize = "sm",
   beamColorVariant = "colorful",
+  beamTheme,
   beamActive = true,
   beamClassName,
   ...props
@@ -28,6 +31,7 @@ export function BorderBeamInput({
     <BorderBeam
       size={beamSize}
       colorVariant={beamColorVariant}
+      theme={beamTheme}
       active={beamActive}
       className={beamClassName}
     >
