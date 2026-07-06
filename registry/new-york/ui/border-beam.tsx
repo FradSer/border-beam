@@ -41,7 +41,7 @@ export interface BorderBeamProps
 }
 
 const SIZE_DEFAULT_RADIUS: Record<BorderBeamSize, number> = {
-  sm: 18,
+  sm: 32,
   md: 16,
   line: 16,
 }

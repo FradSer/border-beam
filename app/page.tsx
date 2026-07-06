@@ -132,7 +132,11 @@ export default function Home() {
                 theme={beamTheme}
                 className="block"
               >
-                <div className="bg-card text-card-foreground rounded-2xl px-6 py-10 text-center">
+                <div
+                  className={`bg-card text-card-foreground px-6 py-10 text-center ${
+                    size === "sm" ? "rounded-[32px]" : "rounded-2xl"
+                  }`}
+                >
                   <div className="text-base font-medium">{v}</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {size}

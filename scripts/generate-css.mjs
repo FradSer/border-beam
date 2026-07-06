@@ -1039,7 +1039,7 @@ css += `
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: var(--beam-radius, 18px);
+  border-radius: var(--beam-radius, 16px);
   background: var(--beam-inner-gradient);
   box-shadow: inset 0 0 5px 1px var(--beam-inner-shadow, rgba(0, 0, 0, 0.14));
   -webkit-mask-image: ${SMALL_INNER_MASK};
@@ -1048,7 +1048,7 @@ css += `
   mask-composite: add;
   pointer-events: none;
   z-index: 1;
-  clip-path: inset(0 round var(--beam-radius, 18px));
+  clip-path: inset(0 round var(--beam-radius, 16px));
   opacity: calc(
     var(--beam-opacity)
     * var(--beam-inner-opacity, 0.7)
@@ -1161,10 +1161,10 @@ css += `
   animation: beam-hue-shift-bloom 8s ease-in-out infinite;
 }
 
-/* ---- mono line bloom blur override ---- */
+/* ---- mono bloom blur override (all sizes) ---- */
 
-[data-beam][data-size="line"][data-variant="mono"][data-static-colors][data-active] [data-beam-bloom],
-[data-beam][data-size="line"][data-variant="mono"][data-static-colors][data-fading] [data-beam-bloom] {
+[data-beam][data-variant="mono"][data-static-colors][data-active] [data-beam-bloom],
+[data-beam][data-variant="mono"][data-static-colors][data-fading] [data-beam-bloom] {
   filter: blur(6px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
 }
 `
