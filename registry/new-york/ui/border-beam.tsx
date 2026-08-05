@@ -57,7 +57,6 @@ function useSystemTheme(enabled: boolean): "dark" | "light" {
   useEffect(() => {
     if (!enabled) return
     const mq = window.matchMedia("(prefers-color-scheme: dark)")
-    setSysTheme(mq.matches ? "dark" : "light")
     const handler = (e: MediaQueryListEvent) =>
       setSysTheme(e.matches ? "dark" : "light")
     mq.addEventListener("change", handler)
@@ -95,6 +94,13 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     const [phase, setPhase] = useState<"idle" | "active" | "fading">(
       active ? "active" : "idle"
     )
+    const [prevActive, setPrevActive] = useState(active)
+    // Adjust state during render when the `active` prop changes, instead of
+    // calling setState from an effect (avoids the extra render pass).
+    if (active !== prevActive) {
+      setPrevActive(active)
+      setPhase(active ? "active" : "fading")
+    }
     const [detectedRadius, setDetectedRadius] = useState<number | null>(null)
 
     const systemTheme = useSystemTheme(theme === "auto")
@@ -107,11 +113,6 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
       const r = parseFloat(getComputedStyle(child).borderTopLeftRadius)
       if (!Number.isNaN(r) && r > 0) setDetectedRadius(r)
     }, [borderRadius, children])
-
-    useEffect(() => {
-      if (active && phase !== "active") setPhase("active")
-      else if (!active && phase === "active") setPhase("fading")
-    }, [active, phase])
 
     const handleAnimationEnd = useCallback(
       (e: AnimationEvent<HTMLDivElement>) => {
