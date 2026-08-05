@@ -1,7 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "border-beam-input",
-  "type": "registry:ui",
   "title": "Border Beam Input",
   "description": "shadcn Input pre-wrapped with the border-beam effect. Defaults to beam size 'sm'.",
   "registryDependencies": [
@@ -14,5 +13,6 @@
       "content": "\"use client\"\n\nimport * as React from \"react\"\n\nimport { Input } from \"@/components/ui/input\"\nimport {\n  BorderBeam,\n  type BorderBeamColorVariant,\n  type BorderBeamSize,\n  type BorderBeamTheme,\n} from \"@/components/ui/border-beam\"\n\nexport interface BorderBeamInputProps\n  extends React.ComponentProps<typeof Input> {\n  beamSize?: BorderBeamSize\n  beamColorVariant?: BorderBeamColorVariant\n  beamTheme?: BorderBeamTheme\n  beamActive?: boolean\n  beamClassName?: string\n}\n\nexport function BorderBeamInput({\n  beamSize = \"sm\",\n  beamColorVariant = \"colorful\",\n  beamTheme,\n  beamActive = true,\n  beamClassName,\n  ...props\n}: BorderBeamInputProps) {\n  return (\n    <BorderBeam\n      size={beamSize}\n      colorVariant={beamColorVariant}\n      theme={beamTheme}\n      active={beamActive}\n      className={beamClassName}\n    >\n      <Input {...props} />\n    </BorderBeam>\n  )\n}\n",
       "type": "registry:ui"
     }
-  ]
+  ],
+  "type": "registry:ui"
 }

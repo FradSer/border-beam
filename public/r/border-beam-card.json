@@ -1,7 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "border-beam-card",
-  "type": "registry:ui",
   "title": "Border Beam Card",
   "description": "shadcn Card pre-wrapped with the border-beam effect. Defaults to beam size 'md'.",
   "registryDependencies": [
@@ -14,5 +13,6 @@
       "content": "\"use client\"\n\nimport * as React from \"react\"\n\nimport { Card } from \"@/components/ui/card\"\nimport {\n  BorderBeam,\n  type BorderBeamColorVariant,\n  type BorderBeamSize,\n  type BorderBeamTheme,\n} from \"@/components/ui/border-beam\"\n\nexport interface BorderBeamCardProps\n  extends React.ComponentProps<typeof Card> {\n  beamSize?: BorderBeamSize\n  beamColorVariant?: BorderBeamColorVariant\n  beamTheme?: BorderBeamTheme\n  beamActive?: boolean\n  beamClassName?: string\n}\n\nexport function BorderBeamCard({\n  beamSize = \"md\",\n  beamColorVariant = \"colorful\",\n  beamTheme,\n  beamActive = true,\n  beamClassName,\n  ...props\n}: BorderBeamCardProps) {\n  return (\n    <BorderBeam\n      size={beamSize}\n      colorVariant={beamColorVariant}\n      theme={beamTheme}\n      active={beamActive}\n      className={beamClassName}\n    >\n      <Card {...props} />\n    </BorderBeam>\n  )\n}\n",
       "type": "registry:ui"
     }
-  ]
+  ],
+  "type": "registry:ui"
 }
