@@ -13,6 +13,8 @@ import { BorderBeamButton } from "@/registry/new-york/ui/border-beam-button"
 import { BorderBeamCard } from "@/registry/new-york/ui/border-beam-card"
 import { BorderBeamInput } from "@/registry/new-york/ui/border-beam-input"
 import { BorderBeamTextarea } from "@/registry/new-york/ui/border-beam-textarea"
+import { BorderBeamPulseCard } from "@/registry/new-york/ui/border-beam-pulse-card"
+import { BorderBeamPulseButton } from "@/registry/new-york/ui/border-beam-pulse-button"
 
 const VARIANTS: BorderBeamColorVariant[] = [
   "colorful",
@@ -21,6 +23,7 @@ const VARIANTS: BorderBeamColorVariant[] = [
   "sunset",
 ]
 const SIZES: BorderBeamSize[] = ["sm", "md", "line"]
+const PULSE_SIZES: BorderBeamSize[] = ["pulse-inner", "pulse-outside"]
 const THEMES: BorderBeamTheme[] = ["dark", "light", "auto"]
 
 function useTheme() {
@@ -75,9 +78,9 @@ export default function Home() {
           <h1 className="text-3xl font-bold tracking-tight">border-beam</h1>
           <p className="text-muted-foreground">
             Animated border beam distributed as a shadcn registry. Static CSS,
-            no runtime style injection. Supports border (sm/md) and line
-            (bottom-only traveling glow) variants with per-component theme
-            control.
+            no runtime style injection. Supports border (sm/md), line
+            (bottom-only traveling glow), and pulse (pulse-inner / pulse-outside
+            breathing glow) variants with per-component theme control.
           </p>
           <p className="text-xs text-muted-foreground">
             Install:{" "}
@@ -163,6 +166,35 @@ export default function Home() {
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          BorderBeam — pulse family
+        </h2>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {PULSE_SIZES.map((size) => (
+            <div key={size} className="space-y-3">
+              <div className="text-xs text-muted-foreground">size: {size}</div>
+              <div className="grid grid-cols-2 gap-6">
+                {VARIANTS.map((v) => (
+                  <BorderBeam
+                    key={v}
+                    size={size}
+                    colorVariant={v}
+                    active={active}
+                    theme={beamTheme}
+                    className="block"
+                  >
+                    <div className="bg-card text-card-foreground rounded-2xl border px-6 py-10 text-center">
+                      <div className="text-base font-medium">{v}</div>
+                    </div>
+                  </BorderBeam>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
           BorderBeamButton — beam size: sm
         </h2>
         <div className="flex flex-wrap gap-4">
@@ -241,6 +273,43 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          BorderBeamPulseButton / BorderBeamPulseCard — beam size: pulse-inner
+        </h2>
+        <div className="flex flex-wrap gap-6">
+          {VARIANTS.map((v) => (
+            <BorderBeamPulseButton
+              key={v}
+              beamColorVariant={v}
+              beamActive={active}
+              beamTheme={beamTheme}
+              variant="outline"
+            >
+              {v}
+            </BorderBeamPulseButton>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {VARIANTS.map((v) => (
+            <BorderBeamPulseCard
+              key={v}
+              beamColorVariant={v}
+              beamActive={active}
+              beamTheme={beamTheme}
+              beamClassName="block"
+            >
+              <div className="px-6 text-sm">
+                <div className="font-medium">{v}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Card with breathing pulse
+                </div>
+              </div>
+            </BorderBeamPulseCard>
+          ))}
+        </div>
+      </section>
+
       {count > 0 ? (
         <section className="space-y-3">
           <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
@@ -250,7 +319,7 @@ export default function Home() {
             {Array.from({ length: count }, (_, i) => (
               <BorderBeam
                 key={i}
-                size="md"
+                size={SIZES[i % SIZES.length]}
                 colorVariant={VARIANTS[i % VARIANTS.length]}
                 active={active}
                 theme={beamTheme}
