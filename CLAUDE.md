@@ -11,6 +11,7 @@ A shadcn/ui registry component for "border-beam" — a Next.js 16 + Tailwind CSS
 - `registry/new-york/ui/border-beam.css` is **auto-generated** by `scripts/generate-css.mjs`. Never edit the CSS file directly — edit palette data in the script and regenerate.
 - After editing registry components, run `pnpm registry:build` to regenerate JSON files in `public/r/`. This script chains `generate:css` then `shadcn build`.
 - `components/ui/border-beam.tsx` is just a re-export wrapper from the registry source (`export * from "@/registry/new-york/ui/border-beam"`). Do not add logic there — edit the registry source instead.
+- The pulse sizes (`pulse-inner`/`pulse-outside`) are driven by a shared rAF loop in `registry/new-york/ui/pulse-driver.ts`, which writes global custom properties (`--bw1`, `--bx1`, `--bop-tl`, `--beam-hue`, …) inline on each element. Keep the oscillator prop names in sync with the `var(...)` references in `generate-css.mjs` — they share no code, so a rename in one place breaks the other.
 
 ## Build Commands
 

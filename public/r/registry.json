@@ -7,7 +7,7 @@
       "name": "border-beam",
       "type": "registry:ui",
       "title": "Border Beam",
-      "description": "Animated border beam effect using CSS Houdini @property and conic-gradient. Supports border (sm/md) and line (bottom-only traveling glow) size variants with per-component theme control (dark/light/auto). Refactored from Jakubantalik/border-beam (MIT) into static, registry-native CSS — no runtime style injection, no npm dependency.",
+      "description": "Animated border beam effect using CSS Houdini @property and conic-gradient. Supports border (sm/md), line (bottom-only traveling glow), and pulse (pulse-inner / pulse-outside breathing glow) size variants with per-component theme control (dark/light/auto). The pulse breathing is driven by a shared requestAnimationFrame loop (pulse-driver.ts) writing global custom properties. Refactored from Jakubantalik/border-beam (MIT) into static, registry-native CSS — no runtime style injection, no npm dependency.",
       "files": [
         {
           "path": "registry/new-york/ui/border-beam.tsx",
@@ -15,6 +15,10 @@
         },
         {
           "path": "registry/new-york/ui/border-beam.css",
+          "type": "registry:ui"
+        },
+        {
+          "path": "registry/new-york/ui/pulse-driver.ts",
           "type": "registry:ui"
         }
       ],
@@ -91,6 +95,70 @@
       "files": [
         {
           "path": "registry/new-york/ui/border-beam-textarea.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "textarea",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-pulse-button",
+      "type": "registry:ui",
+      "title": "Border Beam Pulse Button",
+      "description": "shadcn Button pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-pulse-button.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "button",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-pulse-card",
+      "type": "registry:ui",
+      "title": "Border Beam Pulse Card",
+      "description": "shadcn Card pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-pulse-card.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "card",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-pulse-input",
+      "type": "registry:ui",
+      "title": "Border Beam Pulse Input",
+      "description": "shadcn Input pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-pulse-input.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": [
+        "input",
+        "https://border-beam.vercel.app/r/border-beam.json"
+      ]
+    },
+    {
+      "name": "border-beam-pulse-textarea",
+      "type": "registry:ui",
+      "title": "Border Beam Pulse Textarea",
+      "description": "shadcn Textarea pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+      "files": [
+        {
+          "path": "registry/new-york/ui/border-beam-pulse-textarea.tsx",
           "type": "registry:ui"
         }
       ],

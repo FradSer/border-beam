@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "border-beam-pulse-input",
+  "title": "Border Beam Pulse Input",
+  "description": "shadcn Input pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+  "registryDependencies": [
+    "input",
+    "https://border-beam.vercel.app/r/border-beam.json"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/ui/border-beam-pulse-input.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\n\nimport { Input } from \"@/components/ui/input\"\nimport {\n  BorderBeam,\n  type BorderBeamColorVariant,\n  type BorderBeamSize,\n  type BorderBeamTheme,\n} from \"@/components/ui/border-beam\"\n\nexport interface BorderBeamPulseInputProps\n  extends React.ComponentProps<typeof Input> {\n  beamSize?: Extract<BorderBeamSize, \"pulse-inner\" | \"pulse-outside\">\n  beamColorVariant?: BorderBeamColorVariant\n  beamTheme?: BorderBeamTheme\n  beamActive?: boolean\n  beamClassName?: string\n}\n\n/**\n * Input pre-wrapped with a breathing pulse border beam. Defaults to\n * \"pulse-inner\". Note: Input uses a translucent background, so the inner glow\n * may faintly show through with \"pulse-inner\"; \"pulse-outside\" rides the\n * element's own 1px border.\n */\nexport function BorderBeamPulseInput({\n  beamSize = \"pulse-inner\",\n  beamColorVariant = \"colorful\",\n  beamTheme,\n  beamActive = true,\n  beamClassName,\n  ...props\n}: BorderBeamPulseInputProps) {\n  return (\n    <BorderBeam\n      size={beamSize}\n      colorVariant={beamColorVariant}\n      theme={beamTheme}\n      active={beamActive}\n      className={beamClassName}\n    >\n      <Input {...props} />\n    </BorderBeam>\n  )\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

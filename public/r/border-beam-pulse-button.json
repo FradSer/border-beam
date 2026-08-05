@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "border-beam-pulse-button",
+  "title": "Border Beam Pulse Button",
+  "description": "shadcn Button pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+  "registryDependencies": [
+    "button",
+    "https://border-beam.vercel.app/r/border-beam.json"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/ui/border-beam-pulse-button.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\n\nimport { Button } from \"@/components/ui/button\"\nimport {\n  BorderBeam,\n  type BorderBeamColorVariant,\n  type BorderBeamSize,\n  type BorderBeamTheme,\n} from \"@/components/ui/border-beam\"\n\nexport interface BorderBeamPulseButtonProps\n  extends React.ComponentProps<typeof Button> {\n  beamSize?: Extract<BorderBeamSize, \"pulse-inner\" | \"pulse-outside\">\n  beamColorVariant?: BorderBeamColorVariant\n  beamTheme?: BorderBeamTheme\n  beamActive?: boolean\n  beamClassName?: string\n}\n\n/**\n * Button pre-wrapped with a breathing pulse border beam. Defaults to\n * \"pulse-inner\". Note: \"pulse-outside\" requires the wrapped child to be opaque\n * with a 1px border, so prefer the `outline` variant when using it.\n */\nexport function BorderBeamPulseButton({\n  beamSize = \"pulse-inner\",\n  beamColorVariant = \"colorful\",\n  beamTheme,\n  beamActive = true,\n  beamClassName,\n  ...props\n}: BorderBeamPulseButtonProps) {\n  return (\n    <BorderBeam\n      size={beamSize}\n      colorVariant={beamColorVariant}\n      theme={beamTheme}\n      active={beamActive}\n      className={beamClassName}\n    >\n      <Button {...props} />\n    </BorderBeam>\n  )\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

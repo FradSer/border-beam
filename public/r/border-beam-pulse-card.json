@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "border-beam-pulse-card",
+  "title": "Border Beam Pulse Card",
+  "description": "shadcn Card pre-wrapped with the breathing pulse border-beam effect. Defaults to beam size 'pulse-inner'.",
+  "registryDependencies": [
+    "card",
+    "https://border-beam.vercel.app/r/border-beam.json"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york/ui/border-beam-pulse-card.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\n\nimport { Card } from \"@/components/ui/card\"\nimport {\n  BorderBeam,\n  type BorderBeamColorVariant,\n  type BorderBeamSize,\n  type BorderBeamTheme,\n} from \"@/components/ui/border-beam\"\n\nexport interface BorderBeamPulseCardProps\n  extends React.ComponentProps<typeof Card> {\n  beamSize?: Extract<BorderBeamSize, \"pulse-inner\" | \"pulse-outside\">\n  beamColorVariant?: BorderBeamColorVariant\n  beamTheme?: BorderBeamTheme\n  beamActive?: boolean\n  beamClassName?: string\n}\n\n/**\n * Card pre-wrapped with a breathing pulse border beam. Defaults to\n * \"pulse-inner\". \"pulse-outside\" works well here: Card is opaque and ships its\n * own 1px border, which the outward halo rides on.\n */\nexport function BorderBeamPulseCard({\n  beamSize = \"pulse-inner\",\n  beamColorVariant = \"colorful\",\n  beamTheme,\n  beamActive = true,\n  beamClassName,\n  ...props\n}: BorderBeamPulseCardProps) {\n  return (\n    <BorderBeam\n      size={beamSize}\n      colorVariant={beamColorVariant}\n      theme={beamTheme}\n      active={beamActive}\n      className={beamClassName}\n    >\n      <Card {...props} />\n    </BorderBeam>\n  )\n}\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

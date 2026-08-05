@@ -6,9 +6,16 @@
  * provided by the CSS standard (each element holds its own value of each
  * inheriting custom property).
  *
- * Supports border (sm/md) and line (bottom-only traveling glow) size variants.
+ * Supports border (sm/md), line (bottom-only traveling glow), and pulse
+ * (pulse-inner / pulse-outside breathing glow) size variants.
  * Theme can be set per-component via data-theme="dark"|"light" attribute,
  * or inherited from the page's .dark class (default when no data-theme is set).
+ *
+ * The pulse breathing (blob size/drift/quadrant-opacity + hue drift) is driven
+ * by a shared requestAnimationFrame loop writing the global bw/bx/bop/hue
+ * custom properties on each element (see pulse-driver.ts), so no per-instance
+ * @property names exist. The pulse gradient tables are baked into per-variant
+ * custom properties (--beam-pulse-*) that reference those globals.
  *
  * To tweak palettes or stop positions, edit scripts/generate-css.mjs and rerun
  *   pnpm run generate:css
@@ -50,6 +57,111 @@
   inherits: true;
 }
 @property --beam-edge {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bw1 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bh1 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bw2 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bh2 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bw3 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bh3 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bgh {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-tl {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-tr {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-bl {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-br {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bx1 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --by1 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --bx2 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --by2 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --bx3 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --by3 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --beam-hue {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: true;
+}
+@property --pulse-glow-sx {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --pulse-glow-sy {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --pulse-glow-boost {
   syntax: "<number>";
   initial-value: 1;
   inherits: true;
@@ -140,12 +252,12 @@
 
 /* ---- border/sm/md animation rules ---- */
 
-[data-beam][data-active]:not([data-size="line"]) {
+[data-beam][data-active]:not([data-size="line"]):not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) {
   animation:
     beam-spin var(--beam-duration, 1.96s) linear infinite,
     beam-fade-in 0.6s ease forwards;
 }
-[data-beam][data-fading]:not([data-size="line"]) {
+[data-beam][data-fading]:not([data-size="line"]):not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) {
   animation:
     beam-spin var(--beam-duration, 1.96s) linear infinite,
     beam-fade-out 0.5s ease forwards;
@@ -200,6 +312,64 @@
 [data-beam][data-size="line"][data-theme="light"] {
   --beam-inner-shadow: rgba(0, 0, 0, 0.14);
   --beam-saturation: 1.2;
+}
+
+/* ---- pulse-specific opacity/brightness defaults (theme-dependent) ---- */
+
+[data-beam][data-size="pulse-inner"] {
+  --beam-stroke-opacity: 0.32;
+  --beam-inner-opacity: 0.4;
+  --beam-bloom-opacity: 0.8;
+  --beam-brightness: 1.3;
+  --beam-saturation: 0.75;
+}
+.dark [data-beam][data-size="pulse-inner"],
+[data-beam][data-size="pulse-inner"][data-theme="dark"] {
+  --beam-stroke-opacity: 1.54;
+  --beam-inner-opacity: 0.44;
+  --beam-bloom-opacity: 0.66;
+  --beam-brightness: 0.75;
+  --beam-saturation: 1.2;
+}
+[data-beam][data-size="pulse-inner"][data-theme="light"] {
+  --beam-stroke-opacity: 0.32;
+  --beam-inner-opacity: 0.4;
+  --beam-bloom-opacity: 0.8;
+  --beam-brightness: 1.3;
+  --beam-saturation: 0.75;
+}
+
+[data-beam][data-size="pulse-outside"] {
+  --beam-stroke-opacity: 1.96;
+  --beam-inner-opacity: 1.04;
+  --beam-bloom-opacity: 0.42;
+  --beam-brightness: 1.7;
+  --beam-saturation: 0.6;
+  --beam-core-blur: 6px;
+  --beam-bloom-blur: 15px;
+  --beam-glow-brightness: var(--beam-brightness);
+  --beam-glow-saturate: var(--beam-saturation);
+}
+.dark [data-beam][data-size="pulse-outside"],
+[data-beam][data-size="pulse-outside"][data-theme="dark"] {
+  --beam-stroke-opacity: 0.94;
+  --beam-inner-opacity: 0.34;
+  --beam-bloom-opacity: 0.3;
+  --beam-brightness: 1.9;
+  --beam-saturation: 1.2;
+  --beam-core-blur: 3px;
+  --beam-bloom-blur: 22.5px;
+}
+[data-beam][data-size="pulse-outside"][data-theme="light"] {
+  --beam-stroke-opacity: 1.96;
+  --beam-inner-opacity: 1.04;
+  --beam-bloom-opacity: 0.42;
+  --beam-brightness: 1.7;
+  --beam-saturation: 0.6;
+  --beam-core-blur: 6px;
+  --beam-bloom-blur: 15px;
+  --beam-glow-brightness: var(--beam-brightness);
+  --beam-glow-saturate: var(--beam-saturation);
 }
 
 /* ---- mappings for the conic theme overlays (border/sm/md) ---- */
@@ -770,8 +940,8 @@
 
 /* ---- ::after stroke layer (border/sm/md, active + fading) ---- */
 
-[data-beam][data-active]::after,
-[data-beam][data-fading]::after {
+[data-beam][data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
+[data-beam][data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -813,8 +983,8 @@
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]::after,
-[data-beam]:not([data-static-colors])[data-fading]::after {
+[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
+[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -943,8 +1113,8 @@
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]::before,
-[data-beam]:not([data-static-colors])[data-fading]::before {
+[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before,
+[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -993,8 +1163,8 @@
 
 /* ---- bloom layer (border/sm/md) ---- */
 
-[data-beam][data-active] [data-beam-bloom],
-[data-beam][data-fading] [data-beam-bloom] {
+[data-beam][data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam][data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   display: block;
   position: absolute;
   inset: 0;
@@ -1017,8 +1187,8 @@
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active] [data-beam-bloom],
-[data-beam]:not([data-static-colors])[data-fading] [data-beam-bloom] {
+[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1061,7 +1231,648 @@
 
 /* ---- mono bloom blur override (all sizes) ---- */
 
-[data-beam][data-variant="mono"][data-static-colors][data-active] [data-beam-bloom],
-[data-beam][data-variant="mono"][data-static-colors][data-fading] [data-beam-bloom] {
+[data-beam][data-variant="mono"][data-static-colors][data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam][data-variant="mono"][data-static-colors][data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   filter: blur(6px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
+}
+
+[data-beam][data-size="pulse-inner"][data-variant="colorful"] {
+  --beam-pulse-ring: radial-gradient(ellipse calc(70px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 50, 100, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(40, 140, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(40px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(70px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(50, 200, 80, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(20px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(30, 185, 170, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(180px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(100, 70, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(85px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(26px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(40, 140, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 120, 40, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(26px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(240, 50, 180, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(52px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(180, 40, 240, var(--bop-tr)), transparent);
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 50, 100, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(40, 140, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(50, 200, 80, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(30, 185, 170, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(100, 70, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(40, 140, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 120, 40, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(240, 50, 180, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(180, 40, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(255, 50, 100, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(40, 140, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(50, 200, 80, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(100, 70, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(40, 140, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(255, 120, 40, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(180, 40, 240, 0.775), transparent);
+}
+.dark [data-beam][data-size="pulse-inner"][data-variant="colorful"],
+[data-beam][data-size="pulse-inner"][data-variant="colorful"][data-theme="dark"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 50, 100, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(40, 140, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(50, 200, 80, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(30, 185, 170, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(100, 70, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(40, 140, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 120, 40, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(240, 50, 180, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(180, 40, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(255, 50, 100, 0.76), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(40, 140, 255, 0.76), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(50, 200, 80, 0.76), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(100, 70, 255, 0.76), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(40, 140, 255, 0.76), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(255, 120, 40, 0.76), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(180, 40, 240, 0.76), transparent);
+}
+[data-beam][data-size="pulse-inner"][data-variant="colorful"][data-theme="light"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 50, 100, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(40, 140, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(50, 200, 80, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(30, 185, 170, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(100, 70, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(40, 140, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 120, 40, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(240, 50, 180, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(180, 40, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(255, 50, 100, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(40, 140, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(50, 200, 80, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(100, 70, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(40, 140, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(255, 120, 40, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(180, 40, 240, 0.775), transparent);
+}
+
+[data-beam][data-size="pulse-outside"][data-variant="colorful"] {
+  --beam-pulse-core: radial-gradient(ellipse calc(80px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(19px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(27% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 50, 100, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(11px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(73% + var(--bx2)) calc(-1% + var(--by2)), rgba(255, 120, 40, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(33% + var(--by3)), rgba(240, 50, 180, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(19px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(101% + var(--bx1)) calc(72% + var(--by1)), rgba(180, 40, 240, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(84px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(13px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(67% + var(--bx2)) calc(100% + var(--by2)), rgba(100, 70, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(21px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(24% + var(--bx3)) calc(101% + var(--by3)), rgba(40, 140, 255, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(17px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(0% + var(--bx1)) calc(60% + var(--by1)), rgba(50, 200, 80, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(13px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(-1% + var(--bx2)) calc(28% + var(--by2)), rgba(30, 185, 170, var(--bop-tl)), transparent);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(255, 50, 100, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(255, 120, 40, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(240, 50, 180, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(180, 40, 240, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(100, 70, 255, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(40, 140, 255, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(50, 200, 80, 1), transparent);
+}
+.dark [data-beam][data-size="pulse-outside"][data-variant="colorful"],
+[data-beam][data-size="pulse-outside"][data-variant="colorful"][data-theme="dark"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(255, 50, 100, 0.77), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(255, 120, 40, 0.77), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(240, 50, 180, 0.77), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(180, 40, 240, 0.77), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(100, 70, 255, 0.77), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(40, 140, 255, 0.77), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(50, 200, 80, 0.77), transparent);
+}
+[data-beam][data-size="pulse-outside"][data-variant="colorful"][data-theme="light"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(255, 50, 100, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(255, 120, 40, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(240, 50, 180, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(180, 40, 240, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(100, 70, 255, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(40, 140, 255, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(50, 200, 80, 1), transparent);
+}
+
+[data-beam][data-size="pulse-inner"][data-variant="mono"] {
+  --beam-pulse-ring: radial-gradient(ellipse calc(70px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(180, 180, 180, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(140, 140, 140, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(40px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(70px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(160, 160, 160, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(20px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(130, 130, 130, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(180px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(170, 170, 170, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(85px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(26px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(150, 150, 150, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(190, 190, 190, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(26px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(145, 145, 145, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(52px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(165, 165, 165, var(--bop-tr)), transparent);
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(180, 180, 180, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(140, 140, 140, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(160, 160, 160, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(130, 130, 130, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(170, 170, 170, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(150, 150, 150, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(190, 190, 190, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(145, 145, 145, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(165, 165, 165, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(180, 180, 180, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(140, 140, 140, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(160, 160, 160, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(170, 170, 170, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(150, 150, 150, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(190, 190, 190, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(165, 165, 165, 0.775), transparent);
+}
+.dark [data-beam][data-size="pulse-inner"][data-variant="mono"],
+[data-beam][data-size="pulse-inner"][data-variant="mono"][data-theme="dark"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(180, 180, 180, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(140, 140, 140, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(160, 160, 160, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(130, 130, 130, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(170, 170, 170, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(150, 150, 150, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(190, 190, 190, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(145, 145, 145, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(165, 165, 165, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(180, 180, 180, 0.76), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(140, 140, 140, 0.76), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(160, 160, 160, 0.76), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(170, 170, 170, 0.76), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(150, 150, 150, 0.76), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(190, 190, 190, 0.76), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(165, 165, 165, 0.76), transparent);
+}
+[data-beam][data-size="pulse-inner"][data-variant="mono"][data-theme="light"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(180, 180, 180, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(140, 140, 140, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(160, 160, 160, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(130, 130, 130, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(170, 170, 170, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(150, 150, 150, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(190, 190, 190, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(145, 145, 145, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(165, 165, 165, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(180, 180, 180, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(140, 140, 140, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(160, 160, 160, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(170, 170, 170, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(150, 150, 150, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(190, 190, 190, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(165, 165, 165, 0.775), transparent);
+}
+
+[data-beam][data-size="pulse-outside"][data-variant="mono"] {
+  --beam-pulse-core: radial-gradient(ellipse calc(80px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(19px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(27% + var(--bx1)) calc(0% + var(--by1)), rgba(180, 180, 180, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(11px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(73% + var(--bx2)) calc(-1% + var(--by2)), rgba(190, 190, 190, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(33% + var(--by3)), rgba(145, 145, 145, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(19px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(101% + var(--bx1)) calc(72% + var(--by1)), rgba(165, 165, 165, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(84px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(13px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(67% + var(--bx2)) calc(100% + var(--by2)), rgba(170, 170, 170, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(21px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(24% + var(--bx3)) calc(101% + var(--by3)), rgba(140, 140, 140, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(17px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(0% + var(--bx1)) calc(60% + var(--by1)), rgba(160, 160, 160, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(13px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(-1% + var(--bx2)) calc(28% + var(--by2)), rgba(130, 130, 130, var(--bop-tl)), transparent);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(180, 180, 180, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(190, 190, 190, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(145, 145, 145, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(165, 165, 165, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(170, 170, 170, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(140, 140, 140, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(160, 160, 160, 1), transparent);
+}
+.dark [data-beam][data-size="pulse-outside"][data-variant="mono"],
+[data-beam][data-size="pulse-outside"][data-variant="mono"][data-theme="dark"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(180, 180, 180, 0.77), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(190, 190, 190, 0.77), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(145, 145, 145, 0.77), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(165, 165, 165, 0.77), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(170, 170, 170, 0.77), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(140, 140, 140, 0.77), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(160, 160, 160, 0.77), transparent);
+}
+[data-beam][data-size="pulse-outside"][data-variant="mono"][data-theme="light"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(180, 180, 180, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(190, 190, 190, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(145, 145, 145, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(165, 165, 165, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(170, 170, 170, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(140, 140, 140, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(160, 160, 160, 1), transparent);
+}
+
+[data-beam][data-size="pulse-inner"][data-variant="ocean"] {
+  --beam-pulse-ring: radial-gradient(ellipse calc(70px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(100, 80, 220, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(60, 120, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(40px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(70px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(80, 100, 200, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(20px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(50, 140, 220, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(180px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(120, 80, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(85px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(26px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(70, 130, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(140, 100, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(26px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(90, 110, 230, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(52px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(130, 70, 255, var(--bop-tr)), transparent);
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(100, 80, 220, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(60, 120, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(80, 100, 200, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(50, 140, 220, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(120, 80, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(70, 130, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(140, 100, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(90, 110, 230, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(130, 70, 255, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(100, 80, 220, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(60, 120, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(80, 100, 200, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(120, 80, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(70, 130, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(140, 100, 240, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(130, 70, 255, 0.775), transparent);
+}
+.dark [data-beam][data-size="pulse-inner"][data-variant="ocean"],
+[data-beam][data-size="pulse-inner"][data-variant="ocean"][data-theme="dark"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(100, 80, 220, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(60, 120, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(80, 100, 200, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(50, 140, 220, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(120, 80, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(70, 130, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(140, 100, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(90, 110, 230, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(130, 70, 255, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(100, 80, 220, 0.76), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(60, 120, 255, 0.76), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(80, 100, 200, 0.76), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(120, 80, 255, 0.76), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(70, 130, 255, 0.76), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(140, 100, 240, 0.76), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(130, 70, 255, 0.76), transparent);
+}
+[data-beam][data-size="pulse-inner"][data-variant="ocean"][data-theme="light"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(100, 80, 220, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(60, 120, 255, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(80, 100, 200, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(50, 140, 220, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(120, 80, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(70, 130, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(140, 100, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(90, 110, 230, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(130, 70, 255, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(100, 80, 220, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(60, 120, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(80, 100, 200, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(120, 80, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(70, 130, 255, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(140, 100, 240, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(130, 70, 255, 0.775), transparent);
+}
+
+[data-beam][data-size="pulse-outside"][data-variant="ocean"] {
+  --beam-pulse-core: radial-gradient(ellipse calc(80px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(19px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(27% + var(--bx1)) calc(0% + var(--by1)), rgba(100, 80, 220, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(11px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(73% + var(--bx2)) calc(-1% + var(--by2)), rgba(140, 100, 240, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(33% + var(--by3)), rgba(90, 110, 230, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(19px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(101% + var(--bx1)) calc(72% + var(--by1)), rgba(130, 70, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(84px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(13px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(67% + var(--bx2)) calc(100% + var(--by2)), rgba(120, 80, 255, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(21px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(24% + var(--bx3)) calc(101% + var(--by3)), rgba(60, 120, 255, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(17px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(0% + var(--bx1)) calc(60% + var(--by1)), rgba(80, 100, 200, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(13px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(-1% + var(--bx2)) calc(28% + var(--by2)), rgba(50, 140, 220, var(--bop-tl)), transparent);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(100, 80, 220, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(140, 100, 240, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(90, 110, 230, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(130, 70, 255, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(120, 80, 255, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(60, 120, 255, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(80, 100, 200, 1), transparent);
+}
+.dark [data-beam][data-size="pulse-outside"][data-variant="ocean"],
+[data-beam][data-size="pulse-outside"][data-variant="ocean"][data-theme="dark"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(100, 80, 220, 0.77), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(140, 100, 240, 0.77), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(90, 110, 230, 0.77), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(130, 70, 255, 0.77), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(120, 80, 255, 0.77), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(60, 120, 255, 0.77), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(80, 100, 200, 0.77), transparent);
+}
+[data-beam][data-size="pulse-outside"][data-variant="ocean"][data-theme="light"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(100, 80, 220, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(140, 100, 240, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(90, 110, 230, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(130, 70, 255, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(120, 80, 255, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(60, 120, 255, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(80, 100, 200, 1), transparent);
+}
+
+[data-beam][data-size="pulse-inner"][data-variant="sunset"] {
+  --beam-pulse-ring: radial-gradient(ellipse calc(70px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 80, 50, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(255, 160, 40, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(40px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(70px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(255, 120, 60, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(20px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(255, 200, 50, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(180px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(255, 100, 80, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(85px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(26px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(255, 180, 60, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 60, 60, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(26px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(255, 140, 50, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(52px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(255, 90, 70, var(--bop-tr)), transparent);
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 80, 50, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(255, 160, 40, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(255, 120, 60, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(255, 200, 50, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(255, 100, 80, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(255, 180, 60, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 60, 60, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(255, 140, 50, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(255, 90, 70, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(255, 80, 50, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(255, 160, 40, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(255, 120, 60, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(255, 100, 80, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(255, 180, 60, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(255, 60, 60, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(255, 90, 70, 0.775), transparent);
+}
+.dark [data-beam][data-size="pulse-inner"][data-variant="sunset"],
+[data-beam][data-size="pulse-inner"][data-variant="sunset"][data-theme="dark"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 80, 50, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(255, 160, 40, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(255, 120, 60, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(255, 200, 50, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(255, 100, 80, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(255, 180, 60, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 60, 60, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(255, 140, 50, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(255, 90, 70, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(255, 255, 255, calc(0.18 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(255, 255, 255, calc(0.18 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(255, 80, 50, 0.76), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(255, 160, 40, 0.76), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(255, 120, 60, 0.76), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(255, 100, 80, 0.76), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(255, 180, 60, 0.76), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(255, 60, 60, 0.76), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(255, 90, 70, 0.76), transparent);
+}
+[data-beam][data-size="pulse-inner"][data-variant="sunset"][data-theme="light"] {
+  --beam-pulse-inner: radial-gradient(ellipse calc(65px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(35px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(33% + var(--bx1)) calc(-7.4% + var(--by1)), rgba(255, 80, 50, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(55px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(12% + var(--bx2)) calc(-5% + var(--by2)), rgba(255, 160, 40, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(35px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(65px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx3)) calc(68.3% + var(--by3)), rgba(255, 120, 60, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(2.1% + var(--bx1)) calc(68.3% + var(--by1)), rgba(255, 200, 50, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(173px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(74.4% + var(--bx2)) calc(100% + var(--by2)), rgba(255, 100, 80, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(80px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(55% + var(--bx3)) calc(100% + var(--by3)), rgba(255, 180, 60, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(69px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(28px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(93.9% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 60, 60, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(22px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx2)) calc(27.1% + var(--by2)), rgba(255, 140, 50, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(47px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(27.1% + var(--by3)), rgba(255, 90, 70, var(--bop-tr)), transparent),
+    radial-gradient(ellipse 60px 60px at 0% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 0%, rgba(0, 0, 0, calc(0.08 * var(--bop-tr))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 0% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-bl))), transparent 70%),
+    radial-gradient(ellipse 60px 60px at 100% 100%, rgba(0, 0, 0, calc(0.08 * var(--bop-br))), transparent 70%);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(84px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(48px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 33% -7.4%, rgba(255, 80, 50, 0.775), transparent),
+    radial-gradient(ellipse calc(72px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(42px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 12% -5%, rgba(255, 160, 40, 0.775), transparent),
+    radial-gradient(ellipse calc(48px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(84px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 2.1% 68.3%, rgba(255, 120, 60, 0.775), transparent),
+    radial-gradient(ellipse calc(216px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 74.4% 100%, rgba(255, 100, 80, 0.775), transparent),
+    radial-gradient(ellipse calc(102px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(31px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 55% 100%, rgba(255, 180, 60, 0.775), transparent),
+    radial-gradient(ellipse calc(89px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 93.9% 0%, rgba(255, 60, 60, 0.775), transparent),
+    radial-gradient(ellipse calc(62px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 27.1%, rgba(255, 90, 70, 0.775), transparent);
+}
+
+[data-beam][data-size="pulse-outside"][data-variant="sunset"] {
+  --beam-pulse-core: radial-gradient(ellipse calc(80px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(19px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(27% + var(--bx1)) calc(0% + var(--by1)), rgba(255, 80, 50, var(--bop-tl)), transparent),
+    radial-gradient(ellipse calc(74px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(11px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(73% + var(--bx2)) calc(-1% + var(--by2)), rgba(255, 60, 60, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(15px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(44px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(100% + var(--bx3)) calc(33% + var(--by3)), rgba(255, 140, 50, var(--bop-tr)), transparent),
+    radial-gradient(ellipse calc(19px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(38px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(101% + var(--bx1)) calc(72% + var(--by1)), rgba(255, 90, 70, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(84px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(13px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(67% + var(--bx2)) calc(100% + var(--by2)), rgba(255, 100, 80, var(--bop-br)), transparent),
+    radial-gradient(ellipse calc(60px * var(--bw3) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(21px * var(--bh3) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(24% + var(--bx3)) calc(101% + var(--by3)), rgba(255, 160, 40, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(17px * var(--bw1) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(40px * var(--bh1) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(0% + var(--bx1)) calc(60% + var(--by1)), rgba(255, 120, 60, var(--bop-bl)), transparent),
+    radial-gradient(ellipse calc(13px * var(--bw2) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--bh2) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(-1% + var(--bx2)) calc(28% + var(--by2)), rgba(255, 200, 50, var(--bop-tl)), transparent);
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(255, 80, 50, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(255, 60, 60, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(255, 140, 50, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(255, 90, 70, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(255, 100, 80, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(255, 160, 40, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(255, 120, 60, 1), transparent);
+}
+.dark [data-beam][data-size="pulse-outside"][data-variant="sunset"],
+[data-beam][data-size="pulse-outside"][data-variant="sunset"][data-theme="dark"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(255, 80, 50, 0.77), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(255, 60, 60, 0.77), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(255, 140, 50, 0.77), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(255, 90, 70, 0.77), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(255, 100, 80, 0.77), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(255, 160, 40, 0.77), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(255, 120, 60, 0.77), transparent);
+}
+[data-beam][data-size="pulse-outside"][data-variant="sunset"][data-theme="light"] {
+  --beam-pulse-bloom: radial-gradient(ellipse calc(110px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(30px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 27% 3%, rgba(255, 80, 50, 1), transparent),
+    radial-gradient(ellipse calc(100px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(20px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 73% 1%, rgba(255, 60, 60, 1), transparent),
+    radial-gradient(ellipse calc(26px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(62px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 100% 33%, rgba(255, 140, 50, 1), transparent),
+    radial-gradient(ellipse calc(30px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(56px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 101% 72%, rgba(255, 90, 70, 1), transparent),
+    radial-gradient(ellipse calc(120px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(22px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 67% 99%, rgba(255, 100, 80, 1), transparent),
+    radial-gradient(ellipse calc(88px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(32px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 24% 99%, rgba(255, 160, 40, 1), transparent),
+    radial-gradient(ellipse calc(28px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(58px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at 0% 60%, rgba(255, 120, 60, 1), transparent);
+}
+
+/* ---- pulse hue-shift (driven by --beam-hue from the shared rAF loop) ---- */
+
+[data-beam][data-size="pulse-inner"],
+[data-beam][data-size="pulse-outside"] {
+  --beam-pulse-hue-shift: hue-rotate(calc(var(--beam-hue-base, 0deg) + var(--beam-hue, 0deg)));
+}
+[data-beam][data-size="pulse-inner"][data-static-colors],
+[data-beam][data-size="pulse-outside"][data-static-colors] {
+  --beam-pulse-hue-shift: hue-rotate(0deg);
+}
+
+/* ---- pulse wrapper geometry + fade ---- */
+
+[data-beam][data-size="pulse-inner"] {
+  overflow: hidden;
+  isolation: isolate;
+}
+[data-beam][data-size="pulse-outside"] {
+  overflow: visible;
+  isolation: isolate;
+}
+[data-beam][data-size="pulse-inner"][data-active],
+[data-beam][data-size="pulse-outside"][data-active] {
+  animation: beam-fade-in 0.6s ease forwards;
+}
+[data-beam][data-size="pulse-inner"][data-fading],
+[data-beam][data-size="pulse-outside"][data-fading] {
+  animation: beam-fade-out 0.5s ease forwards;
+}
+
+/* ---- pulse-inner layers ---- */
+
+[data-beam][data-size="pulse-inner"][data-active]::after,
+[data-beam][data-size="pulse-inner"][data-fading]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  padding: 1px;
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-ring);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-stroke-opacity, 1.54) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 0.75)) saturate(var(--beam-saturation, 1.2));
+}
+
+[data-beam][data-size="pulse-inner"][data-active]::before,
+[data-beam][data-size="pulse-inner"][data-fading]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-inner);
+  -webkit-mask-image:
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-over;
+  mask-image:
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: add;
+  pointer-events: none;
+  z-index: 1;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-inner-opacity, 0.44) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 0.75)) saturate(var(--beam-saturation, 1.2));
+}
+
+[data-beam][data-size="pulse-inner"] [data-beam-bloom] {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-bloom);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  will-change: opacity;
+  opacity: 0;
+}
+[data-beam][data-size="pulse-inner"][data-active] [data-beam-bloom],
+[data-beam][data-size="pulse-inner"][data-fading] [data-beam-bloom] {
+  display: block;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-bloom-opacity, 0.66) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: blur(8px) var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 0.75)) saturate(var(--beam-saturation, 1.2));
+}
+
+/* ---- pulse-outside layers ---- */
+
+[data-beam][data-size="pulse-outside"][data-active]::after,
+[data-beam][data-size="pulse-outside"][data-fading]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  padding: 1px;
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-core);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-stroke-opacity, 0.94) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 1.9)) saturate(var(--beam-saturation, 1.2));
+}
+
+[data-beam][data-size="pulse-outside"][data-active]::before,
+[data-beam][data-size="pulse-outside"][data-fading]::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  border-radius: calc(var(--beam-radius, 16px) + 10px);
+  background: var(--beam-pulse-core);
+  transform: scale(0.95, 0.9);
+  pointer-events: none;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-inner-opacity, 0.34) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: blur(var(--beam-core-blur, 3px)) var(--beam-pulse-hue-shift) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
+}
+
+[data-beam][data-size="pulse-outside"] [data-beam-bloom] {
+  display: none;
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  border-radius: calc(var(--beam-radius, 16px) + 30px);
+  background: var(--beam-pulse-bloom);
+  transform: scale(0.95, 0.9);
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0;
+}
+[data-beam][data-size="pulse-outside"][data-active] [data-beam-bloom],
+[data-beam][data-size="pulse-outside"][data-fading] [data-beam-bloom] {
+  display: block;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-bloom-opacity, 0.3) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: blur(var(--beam-bloom-blur, 22.5px)) var(--beam-pulse-hue-shift) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
+}
+
+/* ---- pulse paused rule (offscreen, set by IntersectionObserver) ---- */
+
+[data-beam][data-paused],
+[data-beam][data-paused]::after,
+[data-beam][data-paused]::before,
+[data-beam][data-paused] [data-beam-bloom] {
+  animation-play-state: paused !important;
+}
+
+/* ---- pulse reduced-motion ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-beam][data-active],
+  [data-beam][data-fading],
+  [data-beam][data-active]::after,
+  [data-beam][data-fading]::after,
+  [data-beam][data-active]::before,
+  [data-beam][data-fading]::before,
+  [data-beam][data-active] [data-beam-bloom],
+  [data-beam][data-fading] [data-beam-bloom] {
+    animation: none !important;
+  }
 }

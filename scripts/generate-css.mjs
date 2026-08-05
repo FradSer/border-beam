@@ -637,6 +637,146 @@ const LINE_BLOOM_MASK = `radial-gradient(
 
 const variants = ["colorful", "mono", "ocean", "sunset"]
 
+// ---- Pulse gradient data tables (ported from Jakubantalik/border-beam) ----
+
+// Region → quadrant map for the 9-gradient perimeter ring (index into the border palette).
+const PULSE_RING_MAP = [
+  { region: 1, quad: "tl" },
+  { region: 2, quad: "tl" },
+  { region: 3, quad: "bl" },
+  { region: 1, quad: "bl" },
+  { region: 2, quad: "br" },
+  { region: 3, quad: "br" },
+  { region: 1, quad: "tr" },
+  { region: 2, quad: "tr" },
+  { region: 3, quad: "tr" },
+]
+
+// Card 4 inner-perimeter (::before) gradient sizes — slightly smaller than the ring.
+const PULSE_INNER_SIZES = [
+  [65, 35], [55, 30], [35, 65], [15, 30], [173, 28], [80, 22], [69, 28], [22, 38], [47, 44],
+]
+
+// Card 4 bloom — 7 of the 9 colors, expanded sizes (positions come from the palette).
+const PULSE_INNER_BLOOM = [
+  { ci: 0, region: 1, quad: "tl", w: 84, h: 48 },
+  { ci: 1, region: 2, quad: "tl", w: 72, h: 42 },
+  { ci: 2, region: 3, quad: "bl", w: 48, h: 84 },
+  { ci: 4, region: 2, quad: "br", w: 216, h: 38 },
+  { ci: 5, region: 3, quad: "br", w: 102, h: 31 },
+  { ci: 6, region: 1, quad: "tr", w: 89, h: 38 },
+  { ci: 8, region: 3, quad: "tr", w: 62, h: 58 },
+]
+
+// Card 5 outward core (::after hairline + ::before glow share this edge-positioned set).
+const PULSE_OUTER_CORE = [
+  { ci: 0, region: 1, quad: "tl", w: 80, h: 19, x: "27%", y: "0%" },
+  { ci: 6, region: 2, quad: "tr", w: 74, h: 11, x: "73%", y: "-1%" },
+  { ci: 7, region: 3, quad: "tr", w: 15, h: 44, x: "100%", y: "33%" },
+  { ci: 8, region: 1, quad: "br", w: 19, h: 38, x: "101%", y: "72%" },
+  { ci: 4, region: 2, quad: "br", w: 84, h: 13, x: "67%", y: "100%" },
+  { ci: 1, region: 3, quad: "bl", w: 60, h: 21, x: "24%", y: "101%" },
+  { ci: 2, region: 1, quad: "bl", w: 17, h: 40, x: "0%", y: "60%" },
+  { ci: 3, region: 2, quad: "tl", w: 13, h: 32, x: "-1%", y: "28%" },
+]
+
+// Card 5 outward bloom — wider/blurred halo (7 gradients).
+const PULSE_OUTER_BLOOM = [
+  { ci: 0, region: 1, quad: "tl", w: 110, h: 30, x: "27%", y: "3%" },
+  { ci: 6, region: 2, quad: "tr", w: 100, h: 20, x: "73%", y: "1%" },
+  { ci: 7, region: 3, quad: "tr", w: 26, h: 62, x: "100%", y: "33%" },
+  { ci: 8, region: 1, quad: "br", w: 30, h: 56, x: "101%", y: "72%" },
+  { ci: 4, region: 2, quad: "br", w: 120, h: 22, x: "67%", y: "99%" },
+  { ci: 1, region: 3, quad: "bl", w: 88, h: 32, x: "24%", y: "99%" },
+  { ci: 2, region: 1, quad: "bl", w: 28, h: 58, x: "0%", y: "60%" },
+]
+
+// Breathing params — only `op` (quadrant opacity swing) is needed for the frozen bloom alpha.
+function pulseParams(size, theme) {
+  const isDark = theme === "dark"
+  if (size === "pulse-inner") return isDark ? { op: 0.48 } : { op: 0.45 }
+  return isDark ? { op: 0.46 } : { op: 0 }
+}
+
+// Convert an rgb() palette color into rgba() whose alpha is the live quadrant opacity var.
+function withAlphaVar(color, quad) {
+  const m = color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/)
+  const rgb = m ? `${m[1]}, ${m[2]}, ${m[3]}` : "255, 255, 255"
+  return `rgba(${rgb}, var(--bop-${quad}))`
+}
+
+// One radial-gradient blob; width/height/drift/opacity are the global breathing vars.
+function pulseGrad(color, w, h, region, quad, x, y) {
+  return `radial-gradient(ellipse calc(${w}px * var(--bw${region}) * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(${h}px * var(--bh${region}) * var(--bgh) * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at calc(${x} + var(--bx${region})) calc(${y} + var(--by${region})), ${withAlphaVar(color, quad)}, transparent)`
+}
+
+// The 9-gradient perimeter ring (Card 4 ::after / Card 5 stroke share this).
+function pulseRingGradients(variant) {
+  return mdPalettes[variant]
+    .map((c, i) => {
+      const { region, quad } = PULSE_RING_MAP[i]
+      const [x, y] = c.pos.split(" ")
+      const [w, h] = c.size.split(" ").map(parseFloat)
+      return pulseGrad(c.color, w, h, region, quad, x, y)
+    })
+    .join(",\n    ")
+}
+
+// Card 4 inner-perimeter gradients (smaller sizes) plus the bright corner accents.
+function pulseInnerGradients(variant, isDark) {
+  const palette = mdPalettes[variant]
+  const grads = palette.map((c, i) => {
+    const { region, quad } = PULSE_RING_MAP[i]
+    const [x, y] = c.pos.split(" ")
+    const [w, h] = PULSE_INNER_SIZES[i]
+    return pulseGrad(c.color, w, h, region, quad, x, y)
+  })
+  const cornerRGB = isDark ? "255, 255, 255" : "0, 0, 0"
+  const cornerAlpha = isDark ? 0.18 : 0.08
+  const corners = [
+    ["0%", "0%", "tl"],
+    ["100%", "0%", "tr"],
+    ["0%", "100%", "bl"],
+    ["100%", "100%", "br"],
+  ]
+  const cornerGrads = corners.map(
+    ([x, y, q]) =>
+      `radial-gradient(ellipse 60px 60px at ${x} ${y}, rgba(${cornerRGB}, calc(${cornerAlpha} * var(--bop-${q}))), transparent 70%)`
+  )
+  return [...grads, ...cornerGrads].join(",\n    ")
+}
+
+// Emit a fixed gradient table (used by the outer core + both outer bloom layers).
+function pulseTableGradients(table, variant) {
+  const palette = mdPalettes[variant]
+  return table
+    .map((e) => {
+      const c = palette[e.ci]
+      const [px, py] = c.pos.split(" ")
+      return pulseGrad(c.color, e.w, e.h, e.region, e.quad, e.x ?? px, e.y ?? py)
+    })
+    .join(",\n    ")
+}
+
+// Frozen variant of the bloom gradients: emits literal sizes with a fixed per-blob
+// alpha (the time-average of the breathing range) so the blurred bloom is painted
+// ONCE and cached by the compositor instead of re-rasterized every frame.
+function pulseTableGradientsStatic(table, variant, frozenAlpha) {
+  const palette = mdPalettes[variant]
+  const a = +frozenAlpha.toFixed(3)
+  return table
+    .map((e) => {
+      const c = palette[e.ci]
+      const [px, py] = c.pos.split(" ")
+      const x = e.x ?? px
+      const y = e.y ?? py
+      const m = c.color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/)
+      const rgb = m ? `${m[1]}, ${m[2]}, ${m[3]}` : "255, 255, 255"
+      return `radial-gradient(ellipse calc(${e.w}px * var(--pulse-glow-sx, 1) * var(--pulse-glow-boost, 1)) calc(${e.h}px * var(--pulse-glow-sy, 1) * var(--pulse-glow-boost, 1)) at ${x} ${y}, rgba(${rgb}, ${a}), transparent)`
+    })
+    .join(",\n    ")
+}
+
 let css = `/*
  * border-beam.css — auto-generated by scripts/generate-css.mjs
  *
@@ -645,9 +785,16 @@ let css = `/*
  * provided by the CSS standard (each element holds its own value of each
  * inheriting custom property).
  *
- * Supports border (sm/md) and line (bottom-only traveling glow) size variants.
+ * Supports border (sm/md), line (bottom-only traveling glow), and pulse
+ * (pulse-inner / pulse-outside breathing glow) size variants.
  * Theme can be set per-component via data-theme="dark"|"light" attribute,
  * or inherited from the page's .dark class (default when no data-theme is set).
+ *
+ * The pulse breathing (blob size/drift/quadrant-opacity + hue drift) is driven
+ * by a shared requestAnimationFrame loop writing the global bw/bx/bop/hue
+ * custom properties on each element (see pulse-driver.ts), so no per-instance
+ * @property names exist. The pulse gradient tables are baked into per-variant
+ * custom properties (--beam-pulse-*) that reference those globals.
  *
  * To tweak palettes or stop positions, edit scripts/generate-css.mjs and rerun
  *   pnpm run generate:css
@@ -689,6 +836,111 @@ let css = `/*
   inherits: true;
 }
 @property --beam-edge {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bw1 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bh1 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bw2 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bh2 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bw3 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bh3 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bgh {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-tl {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-tr {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-bl {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bop-br {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --bx1 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --by1 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --bx2 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --by2 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --bx3 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --by3 {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+@property --beam-hue {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: true;
+}
+@property --pulse-glow-sx {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --pulse-glow-sy {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+@property --pulse-glow-boost {
   syntax: "<number>";
   initial-value: 1;
   inherits: true;
@@ -779,12 +1031,12 @@ let css = `/*
 
 /* ---- border/sm/md animation rules ---- */
 
-[data-beam][data-active]:not([data-size="line"]) {
+[data-beam][data-active]:not([data-size="line"]):not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) {
   animation:
     beam-spin var(--beam-duration, 1.96s) linear infinite,
     beam-fade-in 0.6s ease forwards;
 }
-[data-beam][data-fading]:not([data-size="line"]) {
+[data-beam][data-fading]:not([data-size="line"]):not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) {
   animation:
     beam-spin var(--beam-duration, 1.96s) linear infinite,
     beam-fade-out 0.5s ease forwards;
@@ -839,6 +1091,64 @@ let css = `/*
 [data-beam][data-size="line"][data-theme="light"] {
   --beam-inner-shadow: rgba(0, 0, 0, 0.14);
   --beam-saturation: 1.2;
+}
+
+/* ---- pulse-specific opacity/brightness defaults (theme-dependent) ---- */
+
+[data-beam][data-size="pulse-inner"] {
+  --beam-stroke-opacity: 0.32;
+  --beam-inner-opacity: 0.4;
+  --beam-bloom-opacity: 0.8;
+  --beam-brightness: 1.3;
+  --beam-saturation: 0.75;
+}
+.dark [data-beam][data-size="pulse-inner"],
+[data-beam][data-size="pulse-inner"][data-theme="dark"] {
+  --beam-stroke-opacity: 1.54;
+  --beam-inner-opacity: 0.44;
+  --beam-bloom-opacity: 0.66;
+  --beam-brightness: 0.75;
+  --beam-saturation: 1.2;
+}
+[data-beam][data-size="pulse-inner"][data-theme="light"] {
+  --beam-stroke-opacity: 0.32;
+  --beam-inner-opacity: 0.4;
+  --beam-bloom-opacity: 0.8;
+  --beam-brightness: 1.3;
+  --beam-saturation: 0.75;
+}
+
+[data-beam][data-size="pulse-outside"] {
+  --beam-stroke-opacity: 1.96;
+  --beam-inner-opacity: 1.04;
+  --beam-bloom-opacity: 0.42;
+  --beam-brightness: 1.7;
+  --beam-saturation: 0.6;
+  --beam-core-blur: 6px;
+  --beam-bloom-blur: 15px;
+  --beam-glow-brightness: var(--beam-brightness);
+  --beam-glow-saturate: var(--beam-saturation);
+}
+.dark [data-beam][data-size="pulse-outside"],
+[data-beam][data-size="pulse-outside"][data-theme="dark"] {
+  --beam-stroke-opacity: 0.94;
+  --beam-inner-opacity: 0.34;
+  --beam-bloom-opacity: 0.3;
+  --beam-brightness: 1.9;
+  --beam-saturation: 1.2;
+  --beam-core-blur: 3px;
+  --beam-bloom-blur: 22.5px;
+}
+[data-beam][data-size="pulse-outside"][data-theme="light"] {
+  --beam-stroke-opacity: 1.96;
+  --beam-inner-opacity: 1.04;
+  --beam-bloom-opacity: 0.42;
+  --beam-brightness: 1.7;
+  --beam-saturation: 0.6;
+  --beam-core-blur: 6px;
+  --beam-bloom-blur: 15px;
+  --beam-glow-brightness: var(--beam-brightness);
+  --beam-glow-saturate: var(--beam-saturation);
 }
 
 /* ---- mappings for the conic theme overlays (border/sm/md) ---- */
@@ -932,8 +1242,8 @@ for (const v of variants) {
 css += `
 /* ---- ::after stroke layer (border/sm/md, active + fading) ---- */
 
-[data-beam][data-active]::after,
-[data-beam][data-fading]::after {
+[data-beam][data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
+[data-beam][data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -961,8 +1271,8 @@ css += `
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]::after,
-[data-beam]:not([data-static-colors])[data-fading]::after {
+[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
+[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1057,8 +1367,8 @@ css += `
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]::before,
-[data-beam]:not([data-static-colors])[data-fading]::before {
+[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before,
+[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1101,8 +1411,8 @@ css += `
 
 /* ---- bloom layer (border/sm/md) ---- */
 
-[data-beam][data-active] [data-beam-bloom],
-[data-beam][data-fading] [data-beam-bloom] {
+[data-beam][data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam][data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   display: block;
   position: absolute;
   inset: 0;
@@ -1125,8 +1435,8 @@ css += `
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active] [data-beam-bloom],
-[data-beam]:not([data-static-colors])[data-fading] [data-beam-bloom] {
+[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1163,9 +1473,255 @@ css += `
 
 /* ---- mono bloom blur override (all sizes) ---- */
 
-[data-beam][data-variant="mono"][data-static-colors][data-active] [data-beam-bloom],
-[data-beam][data-variant="mono"][data-static-colors][data-fading] [data-beam-bloom] {
+[data-beam][data-variant="mono"][data-static-colors][data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam][data-variant="mono"][data-static-colors][data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   filter: blur(6px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
+}
+`
+// ---- Pulse variant color gradient rules (theme-dependent) ----
+
+for (const v of variants) {
+  const ring = pulseRingGradients(v)
+  const core = pulseTableGradients(PULSE_OUTER_CORE, v)
+  const innerDark = pulseInnerGradients(v, true)
+  const innerLight = pulseInnerGradients(v, false)
+  const innerBloomDark = pulseTableGradientsStatic(
+    PULSE_INNER_BLOOM,
+    v,
+    1 - pulseParams("pulse-inner", "dark").op * 0.5
+  )
+  const innerBloomLight = pulseTableGradientsStatic(
+    PULSE_INNER_BLOOM,
+    v,
+    1 - pulseParams("pulse-inner", "light").op * 0.5
+  )
+  const outerBloomDark = pulseTableGradientsStatic(
+    PULSE_OUTER_BLOOM,
+    v,
+    1 - pulseParams("pulse-outside", "dark").op * 0.5
+  )
+  const outerBloomLight = pulseTableGradientsStatic(
+    PULSE_OUTER_BLOOM,
+    v,
+    1 - pulseParams("pulse-outside", "light").op * 0.5
+  )
+
+  css += `
+[data-beam][data-size="pulse-inner"][data-variant="${v}"] {
+  --beam-pulse-ring: ${ring};
+  --beam-pulse-inner: ${innerLight};
+  --beam-pulse-bloom: ${innerBloomLight};
+}
+.dark [data-beam][data-size="pulse-inner"][data-variant="${v}"],
+[data-beam][data-size="pulse-inner"][data-variant="${v}"][data-theme="dark"] {
+  --beam-pulse-inner: ${innerDark};
+  --beam-pulse-bloom: ${innerBloomDark};
+}
+[data-beam][data-size="pulse-inner"][data-variant="${v}"][data-theme="light"] {
+  --beam-pulse-inner: ${innerLight};
+  --beam-pulse-bloom: ${innerBloomLight};
+}
+
+[data-beam][data-size="pulse-outside"][data-variant="${v}"] {
+  --beam-pulse-core: ${core};
+  --beam-pulse-bloom: ${outerBloomLight};
+}
+.dark [data-beam][data-size="pulse-outside"][data-variant="${v}"],
+[data-beam][data-size="pulse-outside"][data-variant="${v}"][data-theme="dark"] {
+  --beam-pulse-bloom: ${outerBloomDark};
+}
+[data-beam][data-size="pulse-outside"][data-variant="${v}"][data-theme="light"] {
+  --beam-pulse-bloom: ${outerBloomLight};
+}
+`
+}
+
+// ---- Pulse hue-shift custom property (JS drives --beam-hue) ----
+
+css += `
+/* ---- pulse hue-shift (driven by --beam-hue from the shared rAF loop) ---- */
+
+[data-beam][data-size="pulse-inner"],
+[data-beam][data-size="pulse-outside"] {
+  --beam-pulse-hue-shift: hue-rotate(calc(var(--beam-hue-base, 0deg) + var(--beam-hue, 0deg)));
+}
+[data-beam][data-size="pulse-inner"][data-static-colors],
+[data-beam][data-size="pulse-outside"][data-static-colors] {
+  --beam-pulse-hue-shift: hue-rotate(0deg);
+}
+
+/* ---- pulse wrapper geometry + fade ---- */
+
+[data-beam][data-size="pulse-inner"] {
+  overflow: hidden;
+  isolation: isolate;
+}
+[data-beam][data-size="pulse-outside"] {
+  overflow: visible;
+  isolation: isolate;
+}
+[data-beam][data-size="pulse-inner"][data-active],
+[data-beam][data-size="pulse-outside"][data-active] {
+  animation: beam-fade-in 0.6s ease forwards;
+}
+[data-beam][data-size="pulse-inner"][data-fading],
+[data-beam][data-size="pulse-outside"][data-fading] {
+  animation: beam-fade-out 0.5s ease forwards;
+}
+
+/* ---- pulse-inner layers ---- */
+
+[data-beam][data-size="pulse-inner"][data-active]::after,
+[data-beam][data-size="pulse-inner"][data-fading]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  padding: 1px;
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-ring);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-stroke-opacity, 1.54) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 0.75)) saturate(var(--beam-saturation, 1.2));
+}
+
+[data-beam][data-size="pulse-inner"][data-active]::before,
+[data-beam][data-size="pulse-inner"][data-fading]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-inner);
+  -webkit-mask-image:
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-over;
+  mask-image:
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: add;
+  pointer-events: none;
+  z-index: 1;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-inner-opacity, 0.44) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 0.75)) saturate(var(--beam-saturation, 1.2));
+}
+
+[data-beam][data-size="pulse-inner"] [data-beam-bloom] {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-bloom);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 3;
+  will-change: opacity;
+  opacity: 0;
+}
+[data-beam][data-size="pulse-inner"][data-active] [data-beam-bloom],
+[data-beam][data-size="pulse-inner"][data-fading] [data-beam-bloom] {
+  display: block;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-bloom-opacity, 0.66) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: blur(8px) var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 0.75)) saturate(var(--beam-saturation, 1.2));
+}
+
+/* ---- pulse-outside layers ---- */
+
+[data-beam][data-size="pulse-outside"][data-active]::after,
+[data-beam][data-size="pulse-outside"][data-fading]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--beam-radius, 16px);
+  padding: 1px;
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  background: var(--beam-pulse-core);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-stroke-opacity, 0.94) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: var(--beam-pulse-hue-shift) brightness(var(--beam-brightness, 1.9)) saturate(var(--beam-saturation, 1.2));
+}
+
+[data-beam][data-size="pulse-outside"][data-active]::before,
+[data-beam][data-size="pulse-outside"][data-fading]::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  border-radius: calc(var(--beam-radius, 16px) + 10px);
+  background: var(--beam-pulse-core);
+  transform: scale(0.95, 0.9);
+  pointer-events: none;
+  will-change: opacity, filter;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-inner-opacity, 0.34) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: blur(var(--beam-core-blur, 3px)) var(--beam-pulse-hue-shift) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
+}
+
+[data-beam][data-size="pulse-outside"] [data-beam-bloom] {
+  display: none;
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  border-radius: calc(var(--beam-radius, 16px) + 30px);
+  background: var(--beam-pulse-bloom);
+  transform: scale(0.95, 0.9);
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0;
+}
+[data-beam][data-size="pulse-outside"][data-active] [data-beam-bloom],
+[data-beam][data-size="pulse-outside"][data-fading] [data-beam-bloom] {
+  display: block;
+  animation: none;
+  opacity: calc(var(--beam-opacity) * var(--beam-bloom-opacity, 0.3) * var(--beam-mono-multiplier, 1) * var(--beam-strength, 1));
+  filter: blur(var(--beam-bloom-blur, 22.5px)) var(--beam-pulse-hue-shift) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
+}
+
+/* ---- pulse paused rule (offscreen, set by IntersectionObserver) ---- */
+
+[data-beam][data-paused],
+[data-beam][data-paused]::after,
+[data-beam][data-paused]::before,
+[data-beam][data-paused] [data-beam-bloom] {
+  animation-play-state: paused !important;
+}
+
+/* ---- pulse reduced-motion ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-beam][data-active],
+  [data-beam][data-fading],
+  [data-beam][data-active]::after,
+  [data-beam][data-fading]::after,
+  [data-beam][data-active]::before,
+  [data-beam][data-fading]::before,
+  [data-beam][data-active] [data-beam-bloom],
+  [data-beam][data-fading] [data-beam-bloom] {
+    animation: none !important;
+  }
 }
 `
 
