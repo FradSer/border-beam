@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A shadcn/ui registry component for "border-beam" — a Next.js 15 + Tailwind CSS v4 project that publishes a reusable UI component via the shadcn registry system.
+A shadcn/ui registry component for "border-beam" — a Next.js 16 + Tailwind CSS v4 project that publishes a reusable UI component via the shadcn registry system.
 
 ## Key Gotchas
 
@@ -14,13 +14,14 @@ A shadcn/ui registry component for "border-beam" — a Next.js 15 + Tailwind CSS
 
 ## Build Commands
 
-- `pnpm dev` — dev server with Turbopack (`--turbopack` flag)
-- `pnpm build` — Next.js production build
+- `pnpm dev` — dev server (Turbopack is the default bundler in Next.js 16)
+- `pnpm build` — Next.js production build (Turbopack)
+- `pnpm lint` — ESLint flat config (`eslint .`)
 - `pnpm registry:build` — generate CSS + build shadcn registry JSON (run after registry changes)
 - `pnpm generate:css` — regenerate `border-beam.css` from palette data
 
 ## Architecture Notes
 
 - Tailwind CSS v4 — no `tailwind.config.ts`; config is inline in CSS via `@theme`
-- shadcn v3 — uses `shadcn build` to generate registry JSON
+- shadcn v4 — uses `shadcn build` to generate registry JSON
 - Path alias: `@/*` maps to project root (configured in tsconfig.json)
