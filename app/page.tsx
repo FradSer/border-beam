@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useSyncExternalStore, useState } from "react"
 import { Moon, Sun } from "lucide-react"
 
 import {
@@ -24,27 +24,40 @@ const SIZES: BorderBeamSize[] = ["sm", "md", "line"]
 const THEMES: BorderBeamTheme[] = ["dark", "light", "auto"]
 
 function useTheme() {
-  const [theme, setTheme] = useState<"light" | "dark">("dark")
-
-  useEffect(() => {
+  const getTheme = (): "light" | "dark" => {
+    if (typeof window === "undefined") return "dark"
     const stored = localStorage.getItem("theme") as "light" | "dark" | null
-    const initial =
+    return (
       stored ??
       (window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light")
-    setTheme(initial)
-    document.documentElement.classList.toggle("dark", initial === "dark")
+    )
+  }
+
+  const subscribe = useCallback((onChange: () => void) => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)")
+    mq.addEventListener("change", onChange)
+    // Same-tab storage writes also notify the store so the UI stays in sync.
+    window.addEventListener("storage", onChange)
+    return () => {
+      mq.removeEventListener("change", onChange)
+      window.removeEventListener("storage", onChange)
+    }
   }, [])
 
+  const theme = useSyncExternalStore(subscribe, getTheme, () => "dark")
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark")
+  }, [theme])
+
   const toggle = useCallback(() => {
-    setTheme((cur) => {
-      const next = cur === "dark" ? "light" : "dark"
-      localStorage.setItem("theme", next)
-      document.documentElement.classList.toggle("dark", next === "dark")
-      return next
-    })
-  }, [])
+    const next = theme === "dark" ? "light" : "dark"
+    localStorage.setItem("theme", next)
+    // Notify the store immediately so useSyncExternalStore re-reads getTheme.
+    window.dispatchEvent(new Event("storage"))
+  }, [theme])
 
   return { theme, toggle }
 }
