@@ -2,8 +2,9 @@
 
 A shadcn registry that ships an animated border beam effect, refactored from
 [Jakubantalik/border-beam](https://github.com/Jakubantalik/border-beam) (MIT)
-into static, registry-native CSS. No runtime `<style>` injection, no
-per-instance `@property`, no npm dependency on the upstream package.
+into static, registry-native CSS with a vgpu-powered color renderer. No runtime
+`<style>` injection or per-instance `@property`; the package remains compatible
+with the upstream palette and keeps a static CSS fallback when WebGPU is unavailable.
 
 ## Install
 
@@ -11,10 +12,11 @@ per-instance `@property`, no npm dependency on the upstream package.
 npx shadcn@latest add https://border-beam.vercel.app/r/border-beam.json
 ```
 
-The CLI places `border-beam.tsx` and `border-beam.css` in
-`components/ui/`, adds the `--beam-*` theme tokens to your `:root` and
-`.dark` blocks, and updates nothing else. The component has no npm
-dependencies beyond React.
+The CLI places `border-beam.tsx`, `beam-color-renderer.ts`,
+`beam-color.wgsl`, and `border-beam.css` in `components/ui/`, adds the
+`--beam-*` theme tokens to your `:root` and `.dark` blocks, and installs the
+`vgpu` runtime dependency. The WGSL file requires the loader setup documented
+in `next.config.ts` for Next.js projects.
 
 ## Usage
 
@@ -77,16 +79,16 @@ import { BorderBeamCard } from "@/components/ui/border-beam-card"
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `size` | `'sm' \| 'md'` | `'md'` | Visual preset (sm: button-sized, md: card-sized) |
+| `size` | `'sm' \| 'md' \| 'line' \| 'pulse-inner' \| 'pulse-outside'` | `'md'` | Visual preset |
 | `colorVariant` | `'colorful' \| 'mono' \| 'ocean' \| 'sunset'` | `'colorful'` | Color palette |
 | `active` | `boolean` | `true` | Toggles fade-in / fade-out animation |
 | `staticColors` | `boolean` | `false` | Disables the hue-shift filter; auto-true for `mono` |
 | `borderRadius` | `number` | auto-detect | Border radius in px (read from first child if omitted) |
-| `duration` | `number` | `1.96` | Spin period in seconds |
+| `duration` | `number` | `1.96` / `3.1` / `2.3` | Rotate, line, or pulse cycle duration in seconds |
 | `strength` | `number` (0-1) | `1` | Overall opacity multiplier |
-| `brightness` | `number` | `1.3` | `filter: brightness(...)` applied during hue-shift |
-| `saturation` | `number` | theme-derived | `filter: saturate(...)`; falls back to `--beam-saturation` from `:root` / `.dark` |
-| `hueRange` | `number` | `30` | Hue rotation range in degrees |
+| `brightness` | `number` | `1.3` | GPU/CSS brightness multiplier |
+| `saturation` | `number` | theme-derived | GPU/CSS saturation multiplier |
+| `hueRange` | `number` | `30` | GPU/CSS hue rotation range in degrees |
 | `onActivate` | `() => void` | – | Fires when fade-in animation ends |
 | `onDeactivate` | `() => void` | – | Fires when fade-out animation ends |
 
@@ -94,42 +96,37 @@ All other `HTMLAttributes<HTMLDivElement>` are forwarded to the wrapper.
 
 ## Browser support
 
-The animation requires CSS Houdini `@property`:
+The CSS animation requires CSS Houdini `@property`:
 
 - Chrome / Edge 85+
 - Safari 15.4+
 - Firefox 128+
 
-In unsupported browsers the component renders without the animated beam
-(no crash, no errors).
+Active non-mono rotate and line variants use WebGPU when available. If WebGPU
+is unavailable, they keep the generated CSS animation without throwing. Pulse
+variants continue to use the shared requestAnimationFrame driver.
 
 ## Differences from Jakubantalik/border-beam
 
 This registry version preserves the visual design and props API, but
 re-implements the runtime:
 
-- **No `useId()`** — all CSS selectors are global (`[data-beam]`,
-  `[data-variant="..."]`, `[data-size="..."]`); each element holds its own
-  inheriting custom-property value, which is what gives multi-instance
-  independent rotation.
-- **No `<style>` injection** — CSS ships statically via the shadcn
-  registry pipeline.
-- **No `prefers-color-scheme` listener** — light/dark theming uses
-  shadcn's `.dark` class via `cssVars`.
-- **No `MutationObserver`** — a single `useLayoutEffect` reads the child's
-  `border-radius` once on mount.
-- **`size: "line"` not yet supported** — planned as a v0.2 follow-up
-  (line variant has its own animation system with five custom keyframes
-  and six additional `@property` declarations).
+- CSS remains static and generated from `scripts/generate-css.mjs`.
+- vgpu renders the dynamic color layer from the same palette tables in
+  `registry/new-york/ui/beam-color.wgsl`; CSS retains the masks, opacity, and
+  geometry.
+- One shared browser GPU context and frame loop serve all beam canvases. A
+  missing WebGPU adapter falls back to the generated CSS animation.
+- Pulse breathing still uses the existing shared CSS custom-property driver.
+- The registry ships the renderer, WGSL source, and `vgpu` dependency metadata.
 
 ## Customizing
 
-The visual palettes are defined in
+The visual palettes and WGSL palette tables are defined in
 [`scripts/generate-css.mjs`](./scripts/generate-css.mjs). To tweak colors:
 
 1. Edit the palette tables in that file.
-2. Run `pnpm generate:css` to regenerate
-   `registry/new-york/ui/border-beam.css`.
+2. Run `pnpm generate:css` to regenerate the CSS and `beam-color.wgsl` files.
 3. Run `pnpm registry:build` to rebuild the JSON endpoint.
 
 ## Credits

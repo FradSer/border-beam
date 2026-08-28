@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-28T08:35:00.000Z",
+  "title": "Design System: border-beam",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Deep Ink", "canonical": "oklch(0.2 0.025 260)", "tonalRamp": ["#07080a", "#0e1116", "#171b22", "#21262d", "#30363d", "#484f58", "#8b949e", "#f0f6fc"] },
+      "background-dark": { "role": "neutral", "displayName": "Dark Canvas", "canonical": "oklch(0.14 0.018 260)", "tonalRamp": ["#010409", "#0b0d10", "#161b22", "#21262d", "#30363d", "#484f58", "#8b949e", "#f0f6fc"] },
+      "card-dark": { "role": "neutral", "displayName": "Elevated Card", "canonical": "oklch(0.18 0.02 260)", "tonalRamp": ["#090d13", "#12151a", "#1b2028", "#292f3b", "#3b4353", "#525c6f", "#8b949e", "#f0f6fc"] },
+      "accent-green": { "role": "secondary", "displayName": "Adapter Green", "canonical": "oklch(0.75 0.16 145)", "tonalRamp": ["#0d3320", "#185334", "#24774b", "#34a367", "#4dd293", "#74e2b0", "#a5f0ce", "#e2fbf1"] },
+      "accent-blue": { "role": "secondary", "displayName": "Shader Blue", "canonical": "oklch(0.7 0.14 240)", "tonalRamp": ["#0c2d6b", "#11459a", "#1b62cb", "#388bfd", "#58a6ff", "#79b8ff", "#a5d6ff", "#e1f0ff"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Showcase hero title." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings." },
+      "title": { "displayName": "Title", "purpose": "Card headers and component names." },
+      "body": { "displayName": "Body", "purpose": "Explanatory descriptions." },
+      "label": { "displayName": "Label", "purpose": "Monospace badges and metrics." }
+    },
+    "shadows": [
+      { "name": "beam-glow", "value": "0 0 16px rgba(118, 92, 255, 0.25)", "purpose": "Ambient radiance from GPU passes." }
+    ],
+    "motion": [
+      { "name": "ease-out-standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Fast responsive state transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "800px" },
+      { "name": "lg", "value": "1120px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-contrast action button linking to playground or external source.",
+      "html": "<button class=\"ds-btn-primary\">TRY THE PLAYGROUND <span class=\"ds-arrow\">↗</span></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; background: #f0f6fc; color: #0b0d10; border: none; border-radius: 999px; padding: 12px 18px; font-family: sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: transform 0.18s ease, opacity 0.18s ease; } .ds-btn-primary:hover { transform: translateY(-2px); opacity: 0.9; } .ds-arrow { font-size: 14px; }"
+    },
+    {
+      "name": "Outline Badge",
+      "kind": "chip",
+      "refersTo": "badge-outline",
+      "description": "Monospace technical status label and pass tag.",
+      "html": "<span class=\"ds-badge\">VGPU / BORDER-BEAM</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #2a313c; border-radius: 999px; padding: 3px 9px; color: #8b949e; font-family: monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; background: transparent; }"
+    },
+    {
+      "name": "Inspector Card",
+      "kind": "card",
+      "refersTo": "card-dark",
+      "description": "Dark container for shader parameters and live controls.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Renderer passes</div><div class=\"ds-card-desc\">Three-pass WebGPU execution</div></div>",
+      "css": ".ds-card { border: 1px solid #2a313c; border-radius: 16px; background: #12151a; padding: 20px; color: #f0f6fc; font-family: sans-serif; } .ds-card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; } .ds-card-desc { font-size: 13px; color: #8b949e; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The GPU Workbench",
+    "overview": "The design system presents the animated border-beam component as a high-precision graphic instrument. The interface combines dark technical inspection aesthetics with clean shadcn/ui components, demonstrating real-time WebGPU execution, three-pass WGSL shader rendering (Stroke, Inner, Bloom), and responsive CSS masking.",
+    "keyCharacteristics": [
+      "Dark technical surfaces with monospace status telemetry and live inspection cards.",
+      "Live WebGPU execution highlighted with green and blue status badges.",
+      "Clean component composition without redundant decorative borders.",
+      "Monospace readouts and badges for parameters, shader names, and metrics."
+    ],
+    "rules": [
+      {
+        "name": "The One Color Master Rule",
+        "body": "The component's animated color field carries all chromatic energy; surrounding controls and layout remain monochrome so the beam itself commands attention.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do compose all page elements using official shadcn primitives (Button, Card, Badge, Separator, Tabs, Slider, ToggleGroup, Label).",
+      "Do provide clear feedback when copying install or playground code.",
+      "Do preserve the live 3-pass vgpu rendering execution on every active beam."
+    ],
+    "donts": [
+      "Don't add raw colorful backgrounds to container cards that compete with the border-beam color field.",
+      "Don't use custom space-y-* or space-x-* classes; use gap-* in flex/grid containers.",
+      "Don't remove the WebGPU fallback mechanism."
+    ]
+  }
+}

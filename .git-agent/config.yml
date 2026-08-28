@@ -11,3 +11,9 @@ scopes:
       description: Registry blocks, UI elements, hooks, and registry-specific lib in registry/; does not cover app or public assets.
     - name: scripts
       description: Build, generation, and CI scripts in scripts/; does not include application or registry logic.
+    - name: comp
+      description: Shared component definitions in components/; does not cover registry blocks or application-specific UI.
+    - name: reg
+      description: Registry blocks, UI elements, hooks, and registry-specific implementation in registry/; does not cover app or public assets.
+    - name: pub
+      description: Static assets and registry JSON manifests in public/; does not cover source code or registry blocks.

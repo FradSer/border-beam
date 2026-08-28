@@ -1,0 +1,58 @@
+{
+  "title": "Choose the showcase composition",
+  "question": "The border-beam demo has three comp-first directions. Choose one, combine elements, or re-roll.",
+  "options": [
+    {
+      "id": "upstream-specimen",
+      "label": "Upstream Specimen",
+      "kicker": "RECOMMENDED BASE",
+      "lineage": "beam.jakubantalik.com reference",
+      "thesis": "Let the component perform first, then let the page explain it.",
+      "palette": ["#070707", "#fbfbfb", "#8b8b8b", "#ff5b7e"],
+      "materials": ["ink-black canvas", "hairline rules", "live UI specimen"],
+      "viewport": "A sparse top bar leads to a two-column hero: oversized Border beam type on the left and a large live chat specimen on the right. Rotate/Pulse tabs sit directly beneath it, followed by a measured example row, playground, and install block.",
+      "risk": "Familiar to the reference; it wins on clarity and component fidelity.",
+      "case": "The safest way to make the demo feel like a component site instead of a generic landing page.",
+      "comp": ".impeccable/mocks/decision/upstream-specimen.webp"
+    },
+    {
+      "id": "gpu-workbench",
+      "label": "GPU Workbench",
+      "kicker": "ALTERNATE",
+      "lineage": "shader inspection tools and browser devtools",
+      "thesis": "Make the rendering mechanism part of the thing visitors are exploring.",
+      "palette": ["#0b0d10", "#e8edf2", "#6e7885", "#58a6ff"],
+      "materials": ["dark inspection panel", "monospace readouts", "layered live preview"],
+      "viewport": "A compact header opens into a persistent left preview rail and a right inspector with Rotate/Pulse tabs, layer toggles, color variant controls, and a live JSX/WGSL snippet. The first fold proves three GPU layers without burying the beam.",
+      "risk": "Can feel like tooling rather than a polished registry showcase if the inspector gets louder than the live effect.",
+      "case": "Best for making vgpu legible as a real implementation choice, not a hidden dependency.",
+      "comp": ".impeccable/mocks/decision/gpu-workbench.webp"
+    },
+    {
+      "id": "moving-ribbon",
+      "label": "Moving Ribbon",
+      "kicker": "ALTERNATE",
+      "lineage": "editorial specimen sheets and kinetic typography",
+      "thesis": "Turn the beam's motion into the page's reading rhythm.",
+      "palette": ["#f4f0e8", "#17181c", "#77736d", "#e84b36"],
+      "materials": ["warm paper ground", "oversized specimen type", "thin annotation lines"],
+      "viewport": "A full-width hero places Border beam on one oversized line beside a single wide live specimen. A vertical Rotate/Pulse index anchors the page edge; subsequent examples appear as editorial strips with concise code annotations and a compact playground.",
+      "risk": "The warm editorial treatment may compete with the dark, technical feel of the upstream component.",
+      "case": "Strongest compositional departure while preserving a component-first reading order.",
+      "comp": ".impeccable/mocks/decision/moving-ribbon.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "comp", "toggle": true },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A clean component page with a hero, example grid, playground, and install command.",
+    "palette": ["#ffffff", "#111827", "#2563eb"],
+    "materials": ["neutral cards", "standard tabs", "code block"],
+    "viewport": "Centered title, one demo card, a conventional responsive grid, then controls and installation.",
+    "risk": "Clear but indistinguishable from other component galleries.",
+    "comp": ".impeccable/mocks/decision/canon.webp"
+  },
+  "steer": true
+}
