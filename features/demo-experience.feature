@@ -31,6 +31,6 @@ Feature: Border beam showcase experience
     Given the showcase demo is rendered
     When the visitor navigates or changes a control
     Then effect-family navigation uses accessible shadcn Tabs
-    And option sets use shadcn ToggleGroup controls
+    And option sets use shadcn Button controls
     And strength uses the shadcn Slider
     And actions, status labels, separators, cards, and fields use shadcn primitives

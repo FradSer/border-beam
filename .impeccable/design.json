@@ -72,7 +72,7 @@
       }
     ],
     "dos": [
-      "Do compose all page elements using official shadcn primitives (Button, Card, Badge, Separator, Tabs, Slider, ToggleGroup, Label).",
+      "Do compose all page elements using official shadcn primitives (Button, Card, Badge, Separator, Tabs, Slider, Label).",
       "Do provide clear feedback when copying install or playground code.",
       "Do preserve the live 3-pass vgpu rendering execution on every active beam."
     ],

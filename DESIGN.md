@@ -243,12 +243,12 @@ Surfaces rely on subtle tonal layering (`#0b0d10` canvas to `#12151a` card) and 
 - **Style:** Small monospace uppercase text inside a pill outline or secondary filled container.
 
 ### Sliders & Toggles
-- **Style:** shadcn `Slider` and `ToggleGroup` controls with high-contrast active states and keyboard navigation support.
+- **Style:** shadcn `Slider` and `Button` controls with high-contrast active states and keyboard navigation support.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** compose all page elements using official shadcn primitives (`Button`, `Card`, `Badge`, `Separator`, `Tabs`, `Slider`, `ToggleGroup`, `Label`).
+- **Do** compose all page elements using official shadcn primitives (`Button`, `Card`, `Badge`, `Separator`, `Tabs`, `Slider`, `Label`).
 - **Do** provide clear feedback when copying install or playground code.
 - **Do** preserve the live 3-pass vgpu rendering execution on every active beam.
 

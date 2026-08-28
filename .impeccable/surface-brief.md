@@ -25,5 +25,5 @@ Selecting a layer in the renderer inspector focuses that specific GPU pass with 
 - Status Bar: WebGPU adapter state, WGSL compilation status, frame loop metrics.
 - Renderer Inspector: Tabs for Rotate/Pulse, layer selector with pass details, and live shader badge.
 - Component Matrix: BorderBeamButton, BorderBeamCard, BorderBeamInput, BorderBeamTextarea.
-- Playground: Configured using shadcn Card, Label, ToggleGroup, Slider, Button.
+- Playground: Configured using shadcn Card, Label, Button, Slider.
 - Code & Installation: Code cards with CopyButton and action links.
