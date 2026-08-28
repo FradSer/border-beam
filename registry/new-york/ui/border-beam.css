@@ -249,6 +249,56 @@
 [data-beam] [data-beam-bloom] {
   display: none;
 }
+[data-beam] [data-beam-color-layer] {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 4;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+  filter: brightness(var(--beam-brightness, 1)) saturate(var(--beam-saturation, 1));
+  mix-blend-mode: normal;
+  -webkit-mask: conic-gradient(
+      from var(--beam-angle),
+      transparent 0%, transparent 30%,
+      rgba(255, 255, 255, 0.1) 36%, rgba(255, 255, 255, 0.35) 44%,
+      white 52%, white 80%,
+      rgba(255, 255, 255, 0.35) 86%, rgba(255, 255, 255, 0.1) 92%,
+      transparent 95%, transparent 100%
+    );
+  mask: conic-gradient(
+      from var(--beam-angle),
+      transparent 0%, transparent 30%,
+      rgba(255, 255, 255, 0.1) 36%, rgba(255, 255, 255, 0.35) 44%,
+      white 52%, white 80%,
+      rgba(255, 255, 255, 0.35) 86%, rgba(255, 255, 255, 0.1) 92%,
+      transparent 95%, transparent 100%
+    );
+}
+[data-beam][data-vgpu-colors] [data-beam-color-layer] {
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+}
+[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer] {
+  -webkit-mask: radial-gradient(
+      ellipse calc(78px * var(--beam-w)) calc(60px * var(--beam-h)) at calc(var(--beam-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    );
+  mask: radial-gradient(
+      ellipse calc(78px * var(--beam-w)) calc(60px * var(--beam-h)) at calc(var(--beam-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    );
+}
 
 /* ---- border/sm/md animation rules ---- */
 
@@ -983,8 +1033,8 @@
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
-[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1026,8 +1076,8 @@
   );
 }
 
-[data-beam][data-size="line"]:not([data-static-colors])[data-active]::after,
-[data-beam][data-size="line"]:not([data-static-colors])[data-fading]::after {
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]::after,
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]::after {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1113,8 +1163,8 @@
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before,
-[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before {
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before,
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1156,8 +1206,8 @@
   );
 }
 
-[data-beam][data-size="line"]:not([data-static-colors])[data-active]::before,
-[data-beam][data-size="line"]:not([data-static-colors])[data-fading]::before {
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]::before,
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]::before {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1187,8 +1237,8 @@
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
-[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1224,8 +1274,8 @@
   );
 }
 
-[data-beam][data-size="line"]:not([data-static-colors])[data-active] [data-beam-bloom],
-[data-beam][data-size="line"]:not([data-static-colors])[data-fading] [data-beam-bloom] {
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active] [data-beam-bloom],
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading] [data-beam-bloom] {
   animation: beam-hue-shift-bloom 8s ease-in-out infinite;
 }
 

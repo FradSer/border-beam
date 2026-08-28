@@ -15,6 +15,7 @@ import {
 } from "react"
 
 import { getPulseDriverConfig, registerPulseInstance } from "./pulse-driver"
+import { startBeamColorRenderer } from "./beam-color-renderer"
 import "./border-beam.css"
 
 export type BorderBeamSize = "sm" | "md" | "line" | "pulse-inner" | "pulse-outside"
@@ -108,6 +109,9 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     const [detectedRadius, setDetectedRadius] = useState<number | null>(null)
     const [isVisible, setIsVisible] = useState(true)
     const [pulseGlowScale, setPulseGlowScale] = useState({ x: 1, y: 1 })
+    const colorCanvasRefs = useRef<Array<HTMLCanvasElement | null>>([])
+    const [gpuColorsActive, setGpuColorsActive] = useState(false)
+    const [gpuColorsFallback, setGpuColorsFallback] = useState(false)
 
     const isPulse = size === "pulse-inner" || size === "pulse-outside"
 
@@ -213,8 +217,88 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
       borderRadius ?? detectedRadius ?? SIZE_DEFAULT_RADIUS[size]
     const finalStaticColors = colorVariant === "mono" || staticColors
     const clampedStrength = Math.max(0, Math.min(1, strength))
-    const finalDuration = duration ?? (size === "line" ? 2.4 : isPulse ? 2.3 : 1.96)
+    const finalDuration = duration ?? (size === "line" ? 3.1 : isPulse ? 2.3 : 1.96)
     const finalHueRange = size === "line" ? Math.min(hueRange, 13) : hueRange
+    const useGpuColors = true
+
+    useEffect(() => {
+      if (
+        !useGpuColors ||
+        !(phase === "active" || phase === "fading") ||
+        !isVisible ||
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return
+      }
+
+      const canvases = colorCanvasRefs.current.filter(
+        (canvas): canvas is HTMLCanvasElement => canvas != null
+      )
+      if (canvases.length !== 3) return
+
+      let cancelled = false
+      const renderer = startBeamColorRenderer(canvases, {
+        variant: colorVariant,
+        hueRange: finalHueRange,
+        brightness: brightness ?? 1.3,
+        saturation:
+          saturation ??
+          (size === "sm"
+            ? resolvedTheme === "dark"
+              ? 1.2
+              : 1.8
+            : resolvedTheme === "dark"
+              ? 1.2
+              : size === "line"
+                ? 1.95
+                : 1.5),
+        duration: finalDuration,
+        size,
+        theme: resolvedTheme,
+        staticColors: finalStaticColors,
+        pulseGlowScale,
+        root: internalRef.current ?? document.createElement("div"),
+        reducedMotion:
+          window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+      })
+
+      void renderer.then(
+        (handle) => {
+          if (cancelled) {
+            handle.dispose()
+            return
+          }
+          setGpuColorsFallback(false)
+          setGpuColorsActive(true)
+        },
+        () => {
+          if (!cancelled) {
+            setGpuColorsActive(false)
+            setGpuColorsFallback(true)
+          }
+        }
+      )
+
+      return () => {
+        cancelled = true
+        setGpuColorsActive(false)
+        setGpuColorsFallback(false)
+        void renderer.then((handle) => handle.dispose(), () => undefined)
+      }
+    }, [
+      brightness,
+      colorVariant,
+      finalDuration,
+      finalHueRange,
+      phase,
+      resolvedTheme,
+      saturation,
+      size,
+      useGpuColors,
+      isVisible,
+      finalStaticColors,
+      pulseGlowScale,
+    ])
 
     // Detune breath/spike against the travel period to avoid visible resonance.
     const breatheDuration = finalDuration * 1.3
@@ -238,7 +322,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     // Drive the pulse breathing from the shared, fps-capped rAF loop while the
     // instance is on, onscreen, and the user hasn't requested reduced motion.
     useEffect(() => {
-      if (!driverConfig) return
+      if (!driverConfig || gpuColorsActive) return
       if (!(phase === "active" || phase === "fading") || !isVisible) return
 
       const el = internalRef.current
@@ -252,7 +336,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
       }
 
       return registerPulseInstance(el, driverConfig)
-    }, [driverConfig, phase, isVisible])
+    }, [driverConfig, gpuColorsActive, phase, isVisible])
 
     const beamStyle: CSSProperties = {
       ...style,
@@ -293,6 +377,9 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
         data-variant={colorVariant}
         data-theme={theme != null ? resolvedTheme : undefined}
         data-static-colors={finalStaticColors ? "" : undefined}
+        data-vgpu-colors={gpuColorsActive ? "" : undefined}
+        data-vgpu-fallback={gpuColorsFallback ? "" : undefined}
+        data-vgpu-paused={useGpuColors && !isVisible ? "" : undefined}
         data-active={phase === "active" ? "" : undefined}
         data-fading={phase === "fading" ? "" : undefined}
         data-paused={
@@ -303,6 +390,18 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
         onAnimationEnd={handleAnimationEnd}
       >
         {children}
+        {useGpuColors
+          ? (["stroke", "inner", "bloom"] as const).map((layer, index) => (
+              <canvas
+                key={layer}
+                ref={(canvas) => {
+                  colorCanvasRefs.current[index] = canvas
+                }}
+                aria-hidden="true"
+                data-beam-color-layer={layer}
+              />
+            ))
+          : null}
         <div data-beam-bloom />
       </div>
     )
