@@ -6,6 +6,8 @@ import type { BorderBeamColorVariant, BorderBeamSize } from "./border-beam"
 export type BeamColorLayer = "stroke" | "inner" | "bloom"
 
 export interface BeamColorRendererHandle {
+  update(options: BeamColorRendererOptions): void
+  setVisible(visible: boolean): void
   dispose(): void
 }
 
@@ -42,6 +44,7 @@ type ManagedEntry = {
   options: BeamColorRendererOptions
   leases: number
   animated: boolean
+  visible: boolean
   rootObserver?: ResizeObserver
   update(options: BeamColorRendererOptions): void
   disposeUnderlying(): void
@@ -160,7 +163,7 @@ function ensureSharedLoop(gpu: Gpu): void {
         )
       })
     })
-  })
+  }, { fps: 30 })
 }
 
 function updateAnimationMembership(
@@ -169,7 +172,7 @@ function updateAnimationMembership(
   animated: boolean
 ): void {
   entry.animated = animated
-  if (animated) {
+  if (animated && entry.visible) {
     animatedEntries.add(entry)
     ensureSharedLoop(gpu)
     return
@@ -185,11 +188,21 @@ function updateAnimationMembership(
 
 function createLease(
   canvases: HTMLCanvasElement[],
-  entry: ManagedEntry
+  entry: ManagedEntry,
+  gpu: Gpu
 ): BeamColorRendererHandle {
   entry.leases += 1
   let disposed = false
   return {
+    update(options) {
+      if (disposed) return
+      entry.update(options)
+    },
+    setVisible(visible) {
+      if (disposed || entry.visible === visible) return
+      entry.visible = visible
+      updateAnimationMembership(gpu, entry, entry.animated)
+    },
     dispose() {
       if (disposed) return
       disposed = true
@@ -229,17 +242,17 @@ export async function startBeamColorRenderer(
   canvases: HTMLCanvasElement[],
   options: BeamColorRendererOptions
 ): Promise<BeamColorRendererHandle> {
+  const gpu = await getSharedGpu()
   const existing = canvasEntries.get(canvases[0])
   if (existing) {
     existing.update(options)
-    return createLease(canvases, existing)
+    return createLease(canvases, existing, gpu)
   }
 
-  const gpu = await getSharedGpu()
   const raced = canvasEntries.get(canvases[0])
   if (raced) {
     raced.update(options)
-    return createLease(canvases, raced)
+    return createLease(canvases, raced, gpu)
   }
 
   const layers: LayerEntry[] = []
@@ -295,6 +308,7 @@ export async function startBeamColorRenderer(
       options,
       leases: 0,
       animated: false,
+      visible: true,
       update(nextOptions: BeamColorRendererOptions) {
         entry.options = nextOptions
         layers.forEach((layer) => setEffectParams(entry, layer, 0))
@@ -321,7 +335,7 @@ export async function startBeamColorRenderer(
     canvases.forEach((canvas) => canvasEntries.set(canvas, entry))
     installGeometryObservers(gpu, entry)
     updateAnimationMembership(gpu, entry, shouldAnimate(options))
-    return createLease(canvases, entry)
+    return createLease(canvases, entry, gpu)
   } catch (error) {
     layers.forEach((layer) => {
       layer.unsubscribeResize()

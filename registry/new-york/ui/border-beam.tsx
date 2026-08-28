@@ -15,7 +15,11 @@ import {
 } from "react"
 
 import { getPulseDriverConfig, registerPulseInstance } from "./pulse-driver"
-import { startBeamColorRenderer } from "./beam-color-renderer"
+import {
+  startBeamColorRenderer,
+  type BeamColorRendererHandle,
+  type BeamColorRendererOptions,
+} from "./beam-color-renderer"
 import "./border-beam.css"
 
 export type BorderBeamSize = "sm" | "md" | "line" | "pulse-inner" | "pulse-outside"
@@ -108,8 +112,11 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     }
     const [detectedRadius, setDetectedRadius] = useState<number | null>(null)
     const [isVisible, setIsVisible] = useState(true)
+    const isVisibleRef = useRef(true)
     const [pulseGlowScale, setPulseGlowScale] = useState({ x: 1, y: 1 })
     const colorCanvasRefs = useRef<Array<HTMLCanvasElement | null>>([])
+    const rendererHandleRef = useRef<BeamColorRendererHandle | null>(null)
+    const rendererOptionsRef = useRef<Omit<BeamColorRendererOptions, "root"> | null>(null)
     const [gpuColorsActive, setGpuColorsActive] = useState(false)
     const [gpuColorsFallback, setGpuColorsFallback] = useState(false)
 
@@ -117,6 +124,10 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
 
     const systemTheme = useSystemTheme(theme === "auto")
     const resolvedTheme = theme === "auto" ? systemTheme : (theme ?? "dark")
+
+    useEffect(() => {
+      isVisibleRef.current = isVisible
+    }, [isVisible])
 
     useIsomorphicLayoutEffect(() => {
       if (borderRadius != null) return
@@ -220,24 +231,8 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     const finalDuration = duration ?? (size === "line" ? 3.1 : isPulse ? 2.3 : 1.96)
     const finalHueRange = size === "line" ? Math.min(hueRange, 13) : hueRange
     const useGpuColors = true
-
-    useEffect(() => {
-      if (
-        !useGpuColors ||
-        !(phase === "active" || phase === "fading") ||
-        !isVisible ||
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-      ) {
-        return
-      }
-
-      const canvases = colorCanvasRefs.current.filter(
-        (canvas): canvas is HTMLCanvasElement => canvas != null
-      )
-      if (canvases.length !== 3) return
-
-      let cancelled = false
-      const renderer = startBeamColorRenderer(canvases, {
+    const rendererOptions = useMemo<Omit<BeamColorRendererOptions, "root">>(
+      () => ({
         variant: colorVariant,
         hueRange: finalHueRange,
         brightness: brightness ?? 1.3,
@@ -257,9 +252,45 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
         theme: resolvedTheme,
         staticColors: finalStaticColors,
         pulseGlowScale,
-        root: internalRef.current ?? document.createElement("div"),
         reducedMotion:
-          window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+          typeof window !== "undefined" &&
+          window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+            ? true
+            : false,
+      }),
+      [
+        brightness,
+        colorVariant,
+        finalDuration,
+        finalHueRange,
+        finalStaticColors,
+        pulseGlowScale,
+        resolvedTheme,
+        saturation,
+        size,
+      ]
+    )
+    const rendererEnabled = phase === "active" || phase === "fading"
+
+    useEffect(() => {
+      rendererOptionsRef.current = rendererOptions
+    }, [rendererOptions])
+
+    useEffect(() => {
+      if (!useGpuColors || !rendererEnabled || rendererOptions.reducedMotion) {
+        return
+      }
+
+      const canvases = colorCanvasRefs.current.filter(
+        (canvas): canvas is HTMLCanvasElement => canvas != null
+      )
+      const root = internalRef.current
+      if (canvases.length !== 3 || !root) return
+
+      let cancelled = false
+      const renderer = startBeamColorRenderer(canvases, {
+        ...rendererOptionsRef.current!,
+        root,
       })
 
       void renderer.then(
@@ -268,6 +299,8 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
             handle.dispose()
             return
           }
+          rendererHandleRef.current = handle
+          handle.setVisible(isVisibleRef.current)
           setGpuColorsFallback(false)
           setGpuColorsActive(true)
         },
@@ -283,22 +316,25 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
         cancelled = true
         setGpuColorsActive(false)
         setGpuColorsFallback(false)
-        void renderer.then((handle) => handle.dispose(), () => undefined)
+        const handle = rendererHandleRef.current
+        rendererHandleRef.current = null
+        handle?.dispose()
+        void renderer.then((pendingHandle) => {
+          if (pendingHandle !== handle) pendingHandle.dispose()
+        }, () => undefined)
       }
-    }, [
-      brightness,
-      colorVariant,
-      finalDuration,
-      finalHueRange,
-      phase,
-      resolvedTheme,
-      saturation,
-      size,
-      useGpuColors,
-      isVisible,
-      finalStaticColors,
-      pulseGlowScale,
-    ])
+    }, [rendererEnabled, rendererOptions.reducedMotion, useGpuColors])
+
+    useEffect(() => {
+      const root = internalRef.current
+      if (root) {
+        rendererHandleRef.current?.update({ ...rendererOptions, root })
+      }
+    }, [rendererOptions])
+
+    useEffect(() => {
+      rendererHandleRef.current?.setVisible(isVisible)
+    }, [isVisible])
 
     // Detune breath/spike against the travel period to avoid visible resonance.
     const breatheDuration = finalDuration * 1.3
