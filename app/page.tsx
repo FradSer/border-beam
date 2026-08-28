@@ -32,7 +32,6 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   BorderBeam,
   type BorderBeamColorVariant,
@@ -356,23 +355,37 @@ export default function Home() {
             <CardContent className="flex flex-col gap-5 p-0">
               <div className="flex flex-col gap-2">
                 <Label className="font-mono text-xs text-muted-foreground uppercase">Type</Label>
-                <ToggleGroup type="single" value={size} onValueChange={(value) => value && setSize(value as PlaygroundSize)} aria-label="Beam type" className="flex-wrap justify-start">
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Beam type">
                   {(["md", "sm", "line", "pulse-inner", "pulse-outside"] as PlaygroundSize[]).map((item) => (
-                    <ToggleGroupItem value={item} key={item} className="font-mono text-xs">
+                    <Button
+                      key={item}
+                      type="button"
+                      size="sm"
+                      variant={size === item ? "default" : "outline"}
+                      className="font-mono text-xs"
+                      onClick={() => setSize(item)}
+                    >
                       {item}
-                    </ToggleGroupItem>
+                    </Button>
                   ))}
-                </ToggleGroup>
+                </div>
               </div>
               <div className="flex flex-col gap-2">
                 <Label className="font-mono text-xs text-muted-foreground uppercase">Color variant</Label>
-                <ToggleGroup type="single" value={variant} onValueChange={(value) => value && setVariant(value as BorderBeamColorVariant)} aria-label="Beam color variant" className="flex-wrap justify-start">
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Beam color variant">
                   {VARIANTS.map((item) => (
-                    <ToggleGroupItem value={item} key={item} className="font-mono text-xs">
+                    <Button
+                      key={item}
+                      type="button"
+                      size="sm"
+                      variant={variant === item ? "default" : "outline"}
+                      className="font-mono text-xs"
+                      onClick={() => setVariant(item)}
+                    >
                       {item}
-                    </ToggleGroupItem>
+                    </Button>
                   ))}
-                </ToggleGroup>
+                </div>
               </div>
               <div className="flex flex-col gap-2 pt-2">
                 <div className="flex items-center justify-between font-mono text-xs text-muted-foreground uppercase">
