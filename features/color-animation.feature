@@ -27,6 +27,12 @@ Feature: GPU-accelerated border beam color rendering
     Then vgpu continues rendering its configured geometry animation
     And only the color rotation remains disabled
 
+  Scenario: Offscreen beams resume without losing their renderer
+    Given an active beam starts outside the viewport
+    When it enters the viewport
+    Then its vgpu canvas layers remain initialized
+    And its animation frame loop resumes without a blank fallback frame
+
   Scenario: GPU resources are cleaned up after unmount
     Given an active beam has initialized its vgpu color layers
     When the beam is unmounted or React Strict Mode remounts it
