@@ -915,8 +915,8 @@ fn lineEdge(phase: f32) -> f32 {
   return 0.0;
 }
 
-fn conicOverlay(uv: vec2f, dark: bool, bloom: bool) -> vec3f {
-  let angle = fract(atan2(uv.y - 0.5, uv.x - 0.5) / 6.2831853 + 0.5);
+fn conicOverlay(uv: vec2f, dark: bool, bloom: bool, spin: f32) -> vec3f {
+  let angle = fract(atan2(uv.y - 0.5, uv.x - 0.5) / 6.2831853 + 0.5 - spin);
   let center = select(0.69, 0.70, bloom);
   let distance = abs(fract(angle - center + 0.5) - 0.5);
   let intensity = 1.0 - smoothstep(0.0, select(0.13, 0.12, bloom), distance);
@@ -960,7 +960,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
         let center = vec2f(x + shape.x / params.rootWidth, 1.0 + shape.y / params.rootHeight);
         acc = over(acc, localUv, center, shape.zw / vec2f(params.rootWidth, params.rootHeight), vec4f(paletteColor(variant, i, 2, dark).rgb, paletteColor(variant, i, 2, dark).a * edge));
       }
-      acc.color += conicOverlay(localUv, dark, false) * acc.alpha;
+      acc.color += conicOverlay(localUv, dark, false, 0.0) * acc.alpha;
     } else if (layer == 1) {
       for (var i = 0; i < 9; i++) {
         let shape = LINE_INNER_SHAPES[i];
@@ -981,7 +981,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       let shape = select(SM_SHAPES[i], MD_SHAPES[i], mode == 0);
       acc = over(acc, localUv, shape.xy, shape.zw / vec2f(params.rootWidth, params.rootHeight), paletteColor(variant, i, mode, dark));
     }
-    acc.color += conicOverlay(localUv, dark, false) * acc.alpha;
+    let spin = fract(params.time / max(params.duration, 0.001));
+    acc.color += conicOverlay(localUv, dark, false, spin) * acc.alpha;
   } else if (layer == 1) {
     let count = select(8, 9, mode == 0);
     for (var i = 0; i < 9; i++) {
@@ -992,7 +993,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       acc = over(acc, localUv, shape.xy, shape.zw * 0.9 / vec2f(params.rootWidth, params.rootHeight), source);
     }
   } else {
-    acc = Accum(conicOverlay(localUv, dark, true), 1.0);
+    let spin = fract(params.time / max(params.duration, 0.001));
+    acc = Accum(conicOverlay(localUv, dark, true, spin), 1.0);
   }
 
   let hue = select(-cos(6.2831853 * params.time / 12.0) * params.hueRange, fract(params.time / select(14.0, 16.0, mode == 3)) * 360.0, mode >= 3);
@@ -1399,6 +1401,14 @@ let css = `/*
 [data-beam] [data-beam-bloom] {
   display: none;
 }
+[data-beam]:not([data-vgpu-colors]) [data-beam-color-layer] {
+  display: none;
+}
+[data-beam][data-vgpu-colors]::before,
+[data-beam][data-vgpu-colors]::after,
+[data-beam][data-vgpu-colors] [data-beam-bloom] {
+  display: none !important;
+}
 [data-beam] [data-beam-color-layer] {
   display: block;
   position: absolute;
@@ -1415,19 +1425,212 @@ let css = `/*
   );
   filter: brightness(var(--beam-brightness, 1)) saturate(var(--beam-saturation, 1));
   mix-blend-mode: normal;
-  -webkit-mask: ${STROKE_MASK};
-  mask: ${STROKE_MASK};
 }
-[data-beam][data-vgpu-colors] [data-beam-color-layer] {
+
+/* stroke layer */
+[data-beam][data-vgpu-colors]:not([data-size="line"]):not([data-size="pulse-outside"]) [data-beam-color-layer="stroke"] {
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
+  border-radius: var(--beam-inner-radius, 15px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 2;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-stroke-opacity, 0.48)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
 }
-[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer] {
-  -webkit-mask: ${LINE_MASK};
-  mask: ${LINE_MASK};
+
+[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer="stroke"] {
+  -webkit-mask: ${LINE_MASK}, linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: source-in, xor;
+  mask: ${LINE_MASK}, linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: intersect, exclude;
+  padding: 1px;
+  border-radius: var(--beam-inner-radius, 15px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 2;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-edge)
+    * var(--beam-stroke-opacity, 0.72)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="pulse-outside"] [data-beam-color-layer="stroke"] {
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  border-radius: var(--beam-inner-radius, 15px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 2;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-stroke-opacity, 0.94)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+/* inner layer */
+[data-beam][data-vgpu-colors][data-size="md"] [data-beam-color-layer="inner"] {
+  -webkit-mask-image:
+    ${STROKE_MASK},
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-in, source-over;
+  mask-image:
+    ${STROKE_MASK},
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: intersect, add;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 1;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-inner-opacity, 0.7)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="sm"] [data-beam-color-layer="inner"] {
+  -webkit-mask-image: ${SMALL_INNER_MASK};
+  -webkit-mask-composite: source-over;
+  mask-image: ${SMALL_INNER_MASK};
+  mask-composite: add;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 1;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-inner-opacity, 0.7)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer="inner"] {
+  -webkit-mask-image:
+    ${LINE_MASK},
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-in, source-over;
+  mask-image:
+    ${LINE_MASK},
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: intersect, add;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 1;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-edge)
+    * var(--beam-inner-opacity, 0.7)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="pulse-inner"] [data-beam-color-layer="inner"] {
+  -webkit-mask-image:
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-over;
+  mask-image:
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: add;
+  border-radius: var(--beam-radius, 16px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  z-index: 1;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-inner-opacity, 0.44)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="pulse-outside"] [data-beam-color-layer="inner"] {
+  inset: -10px;
+  width: calc(100% + 20px);
+  height: calc(100% + 20px);
+  border-radius: calc(var(--beam-radius, 16px) + 10px);
+  -webkit-mask: none;
+  mask: none;
+  z-index: -1;
+  filter: blur(var(--beam-core-blur, 3px)) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-inner-opacity, 0.34)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+/* bloom layer */
+[data-beam][data-vgpu-colors]:not([data-size="line"]):not([data-size="pulse-outside"]) [data-beam-color-layer="bloom"] {
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  border-radius: var(--beam-inner-radius, 15px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  filter: blur(8px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
+  z-index: 3;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-bloom-opacity, 0.8)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer="bloom"] {
+  -webkit-mask: ${LINE_BLOOM_MASK};
+  -webkit-mask-composite: source-over;
+  mask: ${LINE_BLOOM_MASK};
+  mask-composite: add;
+  border-radius: var(--beam-inner-radius, 15px);
+  clip-path: inset(0 round var(--beam-radius, 16px));
+  filter: blur(8px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
+  z-index: 3;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-edge)
+    * var(--beam-bloom-opacity, 0.8)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+}
+
+[data-beam][data-vgpu-colors][data-size="pulse-outside"] [data-beam-color-layer="bloom"] {
+  inset: -30px;
+  width: calc(100% + 60px);
+  height: calc(100% + 60px);
+  border-radius: calc(var(--beam-radius, 16px) + 30px);
+  -webkit-mask: none;
+  mask: none;
+  z-index: -1;
+  filter: blur(var(--beam-bloom-blur, 22.5px)) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-bloom-opacity, 0.3)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
 }
 
 /* ---- border/sm/md animation rules ---- */

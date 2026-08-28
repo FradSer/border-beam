@@ -274,8 +274,8 @@ fn lineEdge(phase: f32) -> f32 {
   return 0.0;
 }
 
-fn conicOverlay(uv: vec2f, dark: bool, bloom: bool) -> vec3f {
-  let angle = fract(atan2(uv.y - 0.5, uv.x - 0.5) / 6.2831853 + 0.5);
+fn conicOverlay(uv: vec2f, dark: bool, bloom: bool, spin: f32) -> vec3f {
+  let angle = fract(atan2(uv.y - 0.5, uv.x - 0.5) / 6.2831853 + 0.5 - spin);
   let center = select(0.69, 0.70, bloom);
   let distance = abs(fract(angle - center + 0.5) - 0.5);
   let intensity = 1.0 - smoothstep(0.0, select(0.13, 0.12, bloom), distance);
@@ -354,7 +354,7 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
         let center = vec2f(x + shape.x / params.rootWidth, 1.0 + shape.y / params.rootHeight);
         acc = over(acc, localUv, center, shape.zw / vec2f(params.rootWidth, params.rootHeight), vec4f(paletteColor(variant, i, 2, dark).rgb, paletteColor(variant, i, 2, dark).a * edge));
       }
-      acc.color += conicOverlay(localUv, dark, false) * acc.alpha;
+      acc.color += conicOverlay(localUv, dark, false, 0.0) * acc.alpha;
     } else if (layer == 1) {
       for (var i = 0; i < 9; i++) {
         let shape = LINE_INNER_SHAPES[i];
@@ -375,7 +375,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       let shape = select(SM_SHAPES[i], MD_SHAPES[i], mode == 0);
       acc = over(acc, localUv, shape.xy, shape.zw / vec2f(params.rootWidth, params.rootHeight), paletteColor(variant, i, mode, dark));
     }
-    acc.color += conicOverlay(localUv, dark, false) * acc.alpha;
+    let spin = fract(params.time / max(params.duration, 0.001));
+    acc.color += conicOverlay(localUv, dark, false, spin) * acc.alpha;
   } else if (layer == 1) {
     let count = select(8, 9, mode == 0);
     for (var i = 0; i < 9; i++) {
@@ -386,7 +387,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       acc = over(acc, localUv, shape.xy, shape.zw * 0.9 / vec2f(params.rootWidth, params.rootHeight), source);
     }
   } else {
-    acc = Accum(conicOverlay(localUv, dark, true), 1.0);
+    let spin = fract(params.time / max(params.duration, 0.001));
+    acc = Accum(conicOverlay(localUv, dark, true, spin), 1.0);
   }
 
   let hue = select(-cos(6.2831853 * params.time / 12.0) * params.hueRange, fract(params.time / select(14.0, 16.0, mode == 3)) * 360.0, mode >= 3);

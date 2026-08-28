@@ -333,5 +333,5 @@ export async function startBeamColorRenderer(
 }
 
 function shouldAnimate(options: BeamColorRendererOptions): boolean {
-  return !options.staticColors && !options.reducedMotion
+  return !options.reducedMotion
 }
