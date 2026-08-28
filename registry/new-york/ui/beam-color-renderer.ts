@@ -68,6 +68,7 @@ const VARIANT: Record<BorderBeamColorVariant, number> = {
 let gpuPromise: Promise<Gpu> | null = null
 let sharedGpu: Gpu | null = null
 let sharedLoop: ReturnType<typeof frameLoop> | null = null
+let pendingRendererStarts = 0
 const managedEntries = new Set<ManagedEntry>()
 const animatedEntries = new Set<ManagedEntry>()
 const canvasEntries = new WeakMap<HTMLCanvasElement, ManagedEntry>()
@@ -89,7 +90,11 @@ function getSharedGpu(): Promise<Gpu> {
 }
 
 function stopSharedGpuIfUnused(gpu: Gpu): void {
-  if (managedEntries.size > 0 || sharedGpu !== gpu) return
+  if (
+    managedEntries.size > 0 ||
+    pendingRendererStarts > 0 ||
+    sharedGpu !== gpu
+  ) return
   sharedLoop?.stop()
   sharedLoop = null
   sharedGpu = null
@@ -242,17 +247,32 @@ export async function startBeamColorRenderer(
   canvases: HTMLCanvasElement[],
   options: BeamColorRendererOptions
 ): Promise<BeamColorRendererHandle> {
-  const gpu = await getSharedGpu()
-  const existing = canvasEntries.get(canvases[0])
-  if (existing) {
-    existing.update(options)
-    return createLease(canvases, existing, gpu)
+  const existingBeforeInit = canvasEntries.get(canvases[0])
+  if (existingBeforeInit) {
+    existingBeforeInit.update(options)
+    return createLease(canvases, existingBeforeInit, sharedGpu!)
   }
 
-  const raced = canvasEntries.get(canvases[0])
-  if (raced) {
-    raced.update(options)
-    return createLease(canvases, raced, gpu)
+  pendingRendererStarts += 1
+  let pending = true
+  const finishPending = () => {
+    if (!pending) return
+    pending = false
+    pendingRendererStarts -= 1
+  }
+
+  let gpu: Gpu
+  try {
+    gpu = await getSharedGpu()
+    const existing = canvasEntries.get(canvases[0])
+    if (existing) {
+      existing.update(options)
+      finishPending()
+      return createLease(canvases, existing, gpu)
+    }
+  } catch (error) {
+    finishPending()
+    throw error
   }
 
   const layers: LayerEntry[] = []
@@ -335,8 +355,10 @@ export async function startBeamColorRenderer(
     canvases.forEach((canvas) => canvasEntries.set(canvas, entry))
     installGeometryObservers(gpu, entry)
     updateAnimationMembership(gpu, entry, shouldAnimate(options))
+    finishPending()
     return createLease(canvases, entry, gpu)
   } catch (error) {
+    finishPending()
     layers.forEach((layer) => {
       layer.unsubscribeResize()
       layer.surface.dispose()
