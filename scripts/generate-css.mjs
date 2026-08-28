@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUT = resolve(__dirname, "../registry/new-york/ui/border-beam.css")
+const SHADER_OUT = resolve(__dirname, "../registry/new-york/ui/beam-color.wgsl")
 
 // ---- Palette data (md size; preserved from Jakubantalik/border-beam, MIT) ----
 
@@ -637,6 +638,376 @@ const LINE_BLOOM_MASK = `radial-gradient(
 
 const variants = ["colorful", "mono", "ocean", "sunset"]
 
+function shaderColor(color) {
+  const match = color.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/)
+  if (!match) return "vec4f(1.0, 1.0, 1.0, 1.0)"
+  const alpha = match[4] == null ? 1 : Number(match[4])
+  return `vec4f(${(+match[1] / 255).toFixed(4)}, ${(+match[2] / 255).toFixed(4)}, ${(+match[3] / 255).toFixed(4)}, ${alpha.toFixed(4)})`
+}
+
+function shaderArray(name, values) {
+  return `const ${name} = array<vec4f, ${values.length}>(${values.join(", ")});`
+}
+
+function shaderShape(position, size) {
+  const [x, y] = position.split(" ").map(parseFloat)
+  const [w, h] = size.split(" ").map(parseFloat)
+  return `vec4f(${(x / 100).toFixed(5)}, ${(y / 100).toFixed(5)}, ${w.toFixed(3)}, ${h.toFixed(3)})`
+}
+
+function shaderPixelShape(position, size) {
+  const [x, y] = position.split(" ").map(parseFloat)
+  const [w, h] = size.split(" ").map(parseFloat)
+  return `vec4f(${x.toFixed(3)}, ${y.toFixed(3)}, ${w.toFixed(3)}, ${h.toFixed(3)})`
+}
+
+function colorArray(name, entries) {
+  return shaderArray(name, entries.map((entry) => shaderColor(entry.color)))
+}
+
+function pulseColorArray(name, table, palette, alpha) {
+  return shaderArray(name, table.map((entry) => {
+    const color = palette[entry.ci].color.replace(/^rgb\(/, "rgba(").replace(/\)$/, `, ${alpha})`)
+    return shaderColor(color)
+  }))
+}
+
+function pulseShapeArray(name, table, palette) {
+  return shaderArray(name, table.map((entry) => {
+    const source = palette[entry.ci]
+    const [x, y] = source.pos.split(" ")
+    return shaderShape(`${entry.x ?? x} ${entry.y ?? y}`, `${entry.w} ${entry.h}`)
+  }))
+}
+
+function generateBeamColorShader() {
+  const declarations = [
+    shaderArray("MD_SHAPES", mdPalettes.colorful.map((entry) => shaderShape(entry.pos, entry.size))),
+    shaderArray("SM_SHAPES", smPalettes.colorful.border.map((entry) => shaderShape(entry.pos, entry.size))),
+    shaderArray("LINE_SHAPES_DARK", linePalettes.colorful.dark.map((entry) => shaderPixelShape(`${entry.offsetX} ${entry.offsetY}`, `${entry.sizeW} ${entry.sizeH}`))),
+    shaderArray("LINE_SHAPES_LIGHT", linePalettes.colorful.light.map((entry) => shaderPixelShape(`${entry.offsetX} ${entry.offsetY}`, `${entry.sizeW} ${entry.sizeH}`))),
+    shaderArray("LINE_INNER_SHAPES", lineInnerPalettes.colorful.map((entry) => shaderPixelShape(`${entry.offsetX} ${entry.offsetY}`, `${entry.sizeW} ${entry.sizeH}`))),
+    shaderArray("LINE_BLOOM_SHAPES", [
+      shaderPixelShape("8 98", "1 92"),
+      shaderPixelShape("22 96", "10 35"),
+      shaderPixelShape("36 97", "2 72"),
+      shaderPixelShape("50 98", "14 28"),
+      shaderPixelShape("64 96", "1.2 85"),
+      shaderPixelShape("78 98", "7 45"),
+      shaderPixelShape("92 97", "1 60"),
+      shaderPixelShape("50 100", "50 32"),
+    ]),
+    shaderArray("PULSE_RING_SHAPES", mdPalettes.colorful.map((entry) => shaderShape(entry.pos, entry.size))),
+    shaderArray("PULSE_INNER_SHAPES", PULSE_INNER_SIZES.map(([w, h], index) => {
+      const [x, y] = mdPalettes.colorful[index].pos.split(" ")
+      return shaderShape(`${x} ${y}`, `${w} ${h}`)
+    })),
+    pulseShapeArray("PULSE_INNER_BLOOM_SHAPES", PULSE_INNER_BLOOM, mdPalettes.colorful),
+    pulseShapeArray("PULSE_OUTER_CORE_SHAPES", PULSE_OUTER_CORE, mdPalettes.colorful),
+    pulseShapeArray("PULSE_OUTER_BLOOM_SHAPES", PULSE_OUTER_BLOOM, mdPalettes.colorful),
+  ]
+
+  for (const variant of variants) {
+    const upper = variant.toUpperCase()
+    declarations.push(colorArray(`MD_COLORS_${upper}`, mdPalettes[variant]))
+    declarations.push(colorArray(`SM_COLORS_${upper}`, smPalettes[variant].border))
+    declarations.push(colorArray(`MD_INNER_COLORS_${upper}`, mdPalettes[variant].map((entry) => ({
+      ...entry,
+      color: withAlpha(entry.color, variant === "mono" ? 0.225 : 0.45),
+    }))))
+    declarations.push(colorArray(`SM_INNER_COLORS_${upper}`, smPalettes[variant].inner))
+    declarations.push(colorArray(`LINE_COLORS_${upper}_DARK`, linePalettes[variant].dark))
+    declarations.push(colorArray(`LINE_COLORS_${upper}_LIGHT`, linePalettes[variant].light))
+    declarations.push(colorArray(`LINE_INNER_COLORS_${upper}`, lineInnerPalettes[variant]))
+    declarations.push(colorArray(`LINE_BLOOM_HEAD_${upper}_DARK`, [
+      { color: spikeColors[variant].dark.primary },
+      { color: spikeColors[variant].dark.secondary },
+    ]))
+    declarations.push(colorArray(`LINE_BLOOM_HEAD_${upper}_LIGHT`, [
+      { color: spikeColors[variant].light.primary },
+      { color: spikeColors[variant].light.secondary },
+    ]))
+    declarations.push(colorArray(`LINE_BLOOM_SPIKES_${upper}_DARK`, lineBloomColors[variant].dark.spikes.map((entry) => ({ color: entry.color1 }))))
+    declarations.push(colorArray(`LINE_BLOOM_SPIKES_${upper}_LIGHT`, lineBloomColors[variant].light.spikes.map((entry) => ({ color: entry.color1 }))))
+    declarations.push(colorArray(`PULSE_RING_COLORS_${upper}`, mdPalettes[variant]))
+    declarations.push(colorArray(`PULSE_INNER_COLORS_${upper}`, mdPalettes[variant].map((entry) => ({
+      ...entry,
+      color: withAlpha(entry.color, variant === "mono" ? 0.225 : 0.45),
+    }))))
+    declarations.push(pulseColorArray(`PULSE_INNER_BLOOM_COLORS_${upper}`, PULSE_INNER_BLOOM, mdPalettes[variant], 0.775))
+    declarations.push(pulseColorArray(`PULSE_OUTER_CORE_COLORS_${upper}`, PULSE_OUTER_CORE, mdPalettes[variant], 1))
+    declarations.push(pulseColorArray(`PULSE_OUTER_BLOOM_COLORS_${upper}`, PULSE_OUTER_BLOOM, mdPalettes[variant], 0.77))
+  }
+
+  const colorBranches = variants.map((variant, index) => {
+    const upper = variant.toUpperCase()
+    return `  if (variant == ${index}) {
+    if (kind == 0) { return MD_COLORS_${upper}[index]; }
+    if (kind == 1) { return SM_COLORS_${upper}[index]; }
+    if (kind == 2) { return select(LINE_COLORS_${upper}_LIGHT[index], LINE_COLORS_${upper}_DARK[index], dark); }
+    if (kind == 3) { return LINE_INNER_COLORS_${upper}[index]; }
+    if (kind == 4) { return MD_INNER_COLORS_${upper}[index]; }
+    if (kind == 5) { return SM_INNER_COLORS_${upper}[index]; }
+    if (kind == 6) { return PULSE_RING_COLORS_${upper}[index]; }
+    return PULSE_INNER_COLORS_${upper}[index];
+  }`
+  }).join("\n")
+
+  const lineBloomBranches = variants.map((variant, index) => {
+    const upper = variant.toUpperCase()
+    return `  if (variant == ${index}) {
+    if (index < 2) { return select(LINE_BLOOM_HEAD_${upper}_LIGHT[index], LINE_BLOOM_HEAD_${upper}_DARK[index], dark); }
+    return select(LINE_BLOOM_SPIKES_${upper}_LIGHT[index - 2], LINE_BLOOM_SPIKES_${upper}_DARK[index - 2], dark);
+  }`
+  }).join("\n")
+
+  const pulseBranches = variants.map((variant, index) => {
+    const upper = variant.toUpperCase()
+    return `  if (variant == ${index}) {
+    if (kind == 0) { return PULSE_INNER_BLOOM_COLORS_${upper}[index]; }
+    if (kind == 1) { return PULSE_OUTER_CORE_COLORS_${upper}[index]; }
+    return PULSE_OUTER_BLOOM_COLORS_${upper}[index];
+  }`
+  }).join("\n")
+
+  const ringCalls = PULSE_RING_MAP.map(({ region, quad }, index) =>
+    `  acc = pulsePoint(acc, uv, PULSE_RING_SHAPES[${index}], ${region}, ${["tl", "tr", "bl", "br"].indexOf(quad)}, pulseColor(variant, ${index}, 3), false);`
+  ).join("\n")
+  const innerCalls = PULSE_RING_MAP.map(({ region, quad }, index) =>
+    `  acc = pulsePoint(acc, uv, PULSE_INNER_SHAPES[${index}], ${region}, ${["tl", "tr", "bl", "br"].indexOf(quad)}, pulseColor(variant, ${index}, 4), false);`
+  ).join("\n")
+  const innerBloomCalls = PULSE_INNER_BLOOM.map(({ region, quad }, index) =>
+    `  acc = pulsePoint(acc, uv, PULSE_INNER_BLOOM_SHAPES[${index}], ${region}, ${["tl", "tr", "bl", "br"].indexOf(quad)}, pulseColor(variant, ${index}, 0), true);`
+  ).join("\n")
+  const outerCoreCalls = PULSE_OUTER_CORE.map(({ region, quad }, index) =>
+    `  acc = pulsePoint(acc, uv, PULSE_OUTER_CORE_SHAPES[${index}], ${region}, ${["tl", "tr", "bl", "br"].indexOf(quad)}, pulseColor(variant, ${index}, 1), false);`
+  ).join("\n")
+  const outerBloomCalls = PULSE_OUTER_BLOOM.map(({ region, quad }, index) =>
+    `  acc = pulsePoint(acc, uv, PULSE_OUTER_BLOOM_SHAPES[${index}], ${region}, ${["tl", "tr", "bl", "br"].indexOf(quad)}, pulseColor(variant, ${index}, 2), true);`
+  ).join("\n")
+
+  return `struct Params {
+  time: f32,
+  variant: f32,
+  hueRange: f32,
+  brightness: f32,
+  saturation: f32,
+  mode: f32,
+  dark: f32,
+  width: f32,
+  height: f32,
+  rootWidth: f32,
+  rootHeight: f32,
+  duration: f32,
+  staticColors: f32,
+  pulseScaleX: f32,
+  pulseScaleY: f32,
+  offsetX: f32,
+  offsetY: f32,
+  layer: f32,
+}
+
+@group(0) @binding(0) var<uniform> params: Params;
+
+${declarations.join("\n")}
+
+struct Accum {
+  color: vec3f,
+  alpha: f32,
+}
+
+fn over(acc: Accum, uv: vec2f, center: vec2f, radius: vec2f, source: vec4f) -> Accum {
+  let distance = length((uv - center) / max(radius, vec2f(0.0001)));
+  let contribution = clamp(1.0 - distance, 0.0, 1.0) * source.a * (1.0 - acc.alpha);
+  return Accum(acc.color + source.rgb * contribution, acc.alpha + contribution);
+}
+
+fn beamUv(uv: vec2f) -> vec2f {
+  return (uv * vec2f(params.width, params.height) + vec2f(params.offsetX, params.offsetY)) / vec2f(params.rootWidth, params.rootHeight);
+}
+
+fn osc(a: f32, b: f32, period: f32, delay: f32) -> f32 {
+  let phase = (params.time - delay) / max(period, 0.001);
+  return a + (b - a) * ((1.0 - cos(6.2831853 * phase)) * 0.5);
+}
+
+fn pulsePoint(acc: Accum, uv: vec2f, shape: vec4f, region: i32, quad: i32, source: vec4f, frozen: bool) -> Accum {
+  let inner = params.mode == 3.0;
+  let dark = params.dark > 0.5;
+  let sp = 0.28;
+  let drift = select(select(19.0, 14.0, dark), select(40.0, 33.0, dark), inner);
+  let op = select(select(0.0, 0.46, dark), select(0.45, 0.48, dark), inner);
+  let gh = select(select(0.58, 0.16, dark), select(0.22, 0.34, dark), inner);
+  let scaleDuration = params.duration / 2.3;
+  let bs = select(2.3, 1.9, inner) * scaleDuration;
+  let ss = select(6.4, 2.6, inner) * scaleDuration;
+  let ghs = select(3.8, 2.4, inner) * scaleDuration;
+  let bw1 = osc(1.0 - sp, 1.0 + sp * 1.1, ss * 0.9, 0.0);
+  let bw2 = osc(1.0 + sp, 1.0 - sp * 0.85, ss * 1.1, 0.0);
+  let bw3 = osc(1.0 - sp * 0.6, 1.0 + sp * 1.15, ss * 0.98, 0.0);
+  let bh1 = osc(1.0 + sp * 0.9, 1.0 - sp * 0.85, ss * 1.26, 0.0);
+  let bh2 = osc(1.0 - sp * 0.8, 1.0 + sp * 1.05, ss * 0.81, 0.0);
+  let bh3 = osc(1.0 + sp * 0.75, 1.0 - sp, ss * 1.4, 0.0);
+  let bgh = osc(1.0 - gh, 1.0 + gh, ghs, 0.0);
+  let bx1 = osc(-drift, drift * 0.9, bs * 1.6, 0.0);
+  let by1 = osc(drift * 0.55, -drift * 0.7, bs * 1.6, 0.0);
+  let bx2 = osc(drift * 0.8, -drift * 0.9, bs * 1.88, 0.0);
+  let by2 = osc(-drift, drift * 0.65, bs * 1.88, 0.0);
+  let bx3 = osc(-drift * 0.6, drift, bs * 1.45, 0.0);
+  let by3 = osc(-drift * 0.85, drift * 0.45, bs * 1.45, 0.0);
+  let widthScale = select(select(bw3, bw2, region == 2), bw1, region == 1);
+  let heightScale = select(select(bh3, bh2, region == 2), bh1, region == 1) * bgh;
+  let movement = select(select(vec2f(bx3, by3), vec2f(bx2, by2), region == 2), vec2f(bx1, by1), region == 1);
+  let quadrantOpacity = select(select(select(1.0 - op, 1.0, quad == 0), osc(1.0 - op, 1.0, bs * 1.32, bs * 0.28), quad == 1), osc(1.0 - op, 1.0, bs * 0.84, bs * 0.55), quad == 2);
+  let finalOpacity = select(osc(1.0 - op, 1.0, bs * 1.58, bs * 0.83), quadrantOpacity, quad < 3);
+  let finalWidth = select(widthScale, 1.0, frozen);
+  let finalHeight = select(heightScale, 1.0, frozen);
+  let finalMovement = select(movement, vec2f(0.0), frozen);
+  let center = shape.xy + finalMovement / vec2f(params.rootWidth, params.rootHeight);
+  let radius = shape.zw * vec2f(finalWidth * params.pulseScaleX, finalHeight * params.pulseScaleY) / vec2f(params.rootWidth, params.rootHeight);
+  return over(acc, uv, center, radius, vec4f(source.rgb, source.a * select(finalOpacity, 1.0, frozen)));
+}
+
+fn paletteColor(variant: i32, index: i32, kind: i32, dark: bool) -> vec4f {
+${colorBranches}
+  return vec4f(1.0, 1.0, 1.0, 1.0);
+}
+
+fn lineBloomColor(variant: i32, index: i32, dark: bool) -> vec4f {
+${lineBloomBranches}
+  return vec4f(1.0, 1.0, 1.0, 1.0);
+}
+
+fn pulseColor(variant: i32, index: i32, kind: i32) -> vec4f {
+${pulseBranches}
+  return vec4f(1.0, 1.0, 1.0, 1.0);
+}
+
+fn rotateHue(color: vec3f, degrees: f32) -> vec3f {
+  let angle = degrees * 0.0174532925;
+  let c = cos(angle);
+  let s = sin(angle);
+  return vec3f(
+    (0.213 + 0.787 * c - 0.213 * s) * color.r + (0.715 - 0.715 * c - 0.715 * s) * color.g + (0.072 - 0.072 * c + 0.928 * s) * color.b,
+    (0.213 - 0.213 * c + 0.143 * s) * color.r + (0.715 + 0.285 * c + 0.140 * s) * color.g + (0.072 + 0.072 * c - 0.283 * s) * color.b,
+    (0.213 - 0.213 * c - 0.787 * s) * color.r + (0.715 - 0.715 * c + 0.715 * s) * color.g + (0.072 + 0.928 * c + 0.072 * s) * color.b
+  );
+}
+
+fn lineTravel(phase: f32) -> f32 {
+  if (phase < 0.1) { return 0.06 + (0.15 - 0.06) * phase / 0.1; }
+  if (phase < 0.2) { return 0.15 + (0.25 - 0.15) * (phase - 0.1) / 0.1; }
+  if (phase < 0.3) { return 0.25 + (0.35 - 0.25) * (phase - 0.2) / 0.1; }
+  if (phase < 0.4) { return 0.35 + (0.44 - 0.35) * (phase - 0.3) / 0.1; }
+  if (phase < 0.5) { return 0.44 + (0.50 - 0.44) * (phase - 0.4) / 0.1; }
+  if (phase < 0.6) { return 0.50 + (0.56 - 0.50) * (phase - 0.5) / 0.1; }
+  if (phase < 0.7) { return 0.56 + (0.65 - 0.56) * (phase - 0.6) / 0.1; }
+  if (phase < 0.8) { return 0.65 + (0.75 - 0.65) * (phase - 0.7) / 0.1; }
+  if (phase < 0.9) { return 0.75 + (0.85 - 0.75) * (phase - 0.8) / 0.1; }
+  return 0.85 + (0.94 - 0.85) * (phase - 0.9) / 0.1;
+}
+
+fn lineEdge(phase: f32) -> f32 {
+  if (phase < 0.125) { return 0.0; }
+  if (phase < 0.325) { return (phase - 0.125) / 0.2; }
+  if (phase < 0.675) { return 1.0; }
+  if (phase < 0.875) { return 1.0 - (phase - 0.675) / 0.2; }
+  return 0.0;
+}
+
+fn conicOverlay(uv: vec2f, dark: bool, bloom: bool) -> vec3f {
+  let angle = fract(atan2(uv.y - 0.5, uv.x - 0.5) / 6.2831853 + 0.5);
+  let center = select(0.69, 0.70, bloom);
+  let distance = abs(fract(angle - center + 0.5) - 0.5);
+  let intensity = 1.0 - smoothstep(0.0, select(0.13, 0.12, bloom), distance);
+  return mix(vec3f(0.0), select(vec3f(1.0), vec3f(0.0), dark), intensity * select(0.55, 0.85, bloom));
+}
+
+fn renderPulse(uv: vec2f, variant: i32, layer: i32) -> Accum {
+  var acc = Accum(vec3f(0.0), 0.0);
+  if (params.mode == 3.0 && layer == 0) {
+${ringCalls}
+  } else if (params.mode == 3.0 && layer == 1) {
+${innerCalls}
+  } else if (params.mode == 3.0 && layer == 2) {
+${innerBloomCalls}
+  } else if (params.mode == 4.0 && (layer == 0 || layer == 1)) {
+${outerCoreCalls}
+  } else if (params.mode == 4.0 && layer == 2) {
+${outerBloomCalls}
+  }
+  return acc;
+}
+
+@fragment
+fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
+  let localUv = beamUv(uv);
+  let mode = i32(params.mode + 0.5);
+  let variant = i32(params.variant + 0.5);
+  let layer = i32(params.layer + 0.5);
+  let dark = params.dark > 0.5;
+  var acc = Accum(vec3f(0.0), 0.0);
+
+  if (mode >= 3) {
+    acc = renderPulse(localUv, variant, layer);
+  } else if (mode == 2) {
+    let phase = fract(params.time / max(params.duration, 0.001));
+    let x = lineTravel(phase);
+    let edge = lineEdge(phase);
+    if (layer == 0) {
+      for (var i = 0; i < 9; i++) {
+        let shape = select(LINE_SHAPES_LIGHT[i], LINE_SHAPES_DARK[i], dark);
+        let center = vec2f(x + shape.x / params.rootWidth, 1.0 + shape.y / params.rootHeight);
+        acc = over(acc, localUv, center, shape.zw / vec2f(params.rootWidth, params.rootHeight), vec4f(paletteColor(variant, i, 2, dark).rgb, paletteColor(variant, i, 2, dark).a * edge));
+      }
+      acc.color += conicOverlay(localUv, dark, false) * acc.alpha;
+    } else if (layer == 1) {
+      for (var i = 0; i < 9; i++) {
+        let shape = LINE_INNER_SHAPES[i];
+        let source = paletteColor(variant, i, 3, dark);
+        let center = vec2f(x + shape.x / params.rootWidth, 1.0 + shape.y / params.rootHeight);
+        acc = over(acc, localUv, center, shape.zw / vec2f(params.rootWidth, params.rootHeight), vec4f(source.rgb, source.a * edge));
+      }
+    } else {
+      for (var i = 0; i < 7; i++) {
+        let shape = LINE_BLOOM_SHAPES[i];
+        acc = over(acc, localUv, shape.xy / 100.0, shape.zw / vec2f(params.rootWidth, params.rootHeight), lineBloomColor(variant, i, dark));
+      }
+    }
+  } else if (layer == 0) {
+    let count = select(8, 9, mode == 0);
+    for (var i = 0; i < 9; i++) {
+      if (i >= count) { continue; }
+      let shape = select(SM_SHAPES[i], MD_SHAPES[i], mode == 0);
+      acc = over(acc, localUv, shape.xy, shape.zw / vec2f(params.rootWidth, params.rootHeight), paletteColor(variant, i, mode, dark));
+    }
+    acc.color += conicOverlay(localUv, dark, false) * acc.alpha;
+  } else if (layer == 1) {
+    let count = select(8, 9, mode == 0);
+    for (var i = 0; i < 9; i++) {
+      if (i >= count) { continue; }
+      let shape = select(SM_SHAPES[i], MD_SHAPES[i], mode == 0);
+      var source = paletteColor(variant, i, 4, dark);
+      if (mode != 0) { source = paletteColor(variant, i, 5, dark); }
+      acc = over(acc, localUv, shape.xy, shape.zw * 0.9 / vec2f(params.rootWidth, params.rootHeight), source);
+    }
+  } else {
+    acc = Accum(conicOverlay(localUv, dark, true), 1.0);
+  }
+
+  let hue = select(-cos(6.2831853 * params.time / 12.0) * params.hueRange, fract(params.time / select(14.0, 16.0, mode == 3)) * 360.0, mode >= 3);
+  let rotated = rotateHue(acc.color, select(hue, 0.0, params.staticColors > 0.5));
+  let luma = dot(rotated, vec3f(0.213, 0.715, 0.072));
+  let adjusted = mix(vec3f(luma), rotated, params.saturation) * params.brightness;
+  let finalAlpha = clamp(acc.alpha, 0.0, 1.0);
+  return vec4f(adjusted * finalAlpha, finalAlpha);
+}
+`
+}
+
+// Shader emission runs after the pulse tables are declared below.
+
+
 // ---- Pulse gradient data tables (ported from Jakubantalik/border-beam) ----
 
 // Region → quadrant map for the 9-gradient perimeter ring (index into the border palette).
@@ -1028,6 +1399,36 @@ let css = `/*
 [data-beam] [data-beam-bloom] {
   display: none;
 }
+[data-beam] [data-beam-color-layer] {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 4;
+  opacity: calc(
+    var(--beam-opacity)
+    * var(--beam-mono-multiplier, 1)
+    * var(--beam-strength, 1)
+  );
+  filter: brightness(var(--beam-brightness, 1)) saturate(var(--beam-saturation, 1));
+  mix-blend-mode: normal;
+  -webkit-mask: ${STROKE_MASK};
+  mask: ${STROKE_MASK};
+}
+[data-beam][data-vgpu-colors] [data-beam-color-layer] {
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+}
+[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer] {
+  -webkit-mask: ${LINE_MASK};
+  mask: ${LINE_MASK};
+}
 
 /* ---- border/sm/md animation rules ---- */
 
@@ -1271,8 +1672,8 @@ css += `
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
-[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after,
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::after {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1308,8 +1709,8 @@ css += `
   );
 }
 
-[data-beam][data-size="line"]:not([data-static-colors])[data-active]::after,
-[data-beam][data-size="line"]:not([data-static-colors])[data-fading]::after {
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]::after,
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]::after {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1367,8 +1768,8 @@ css += `
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before,
-[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before {
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before,
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"])::before {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1404,8 +1805,8 @@ css += `
   );
 }
 
-[data-beam][data-size="line"]:not([data-static-colors])[data-active]::before,
-[data-beam][data-size="line"]:not([data-static-colors])[data-fading]::before {
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]::before,
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]::before {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1435,8 +1836,8 @@ css += `
   );
 }
 
-[data-beam]:not([data-static-colors])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
-[data-beam]:not([data-static-colors])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom],
+[data-beam]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading]:not([data-size="pulse-inner"]):not([data-size="pulse-outside"]) [data-beam-bloom] {
   animation: beam-hue-shift 12s ease-in-out infinite;
 }
 
@@ -1466,8 +1867,8 @@ css += `
   );
 }
 
-[data-beam][data-size="line"]:not([data-static-colors])[data-active] [data-beam-bloom],
-[data-beam][data-size="line"]:not([data-static-colors])[data-fading] [data-beam-bloom] {
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-active] [data-beam-bloom],
+[data-beam][data-size="line"]:not([data-static-colors]):not([data-vgpu-colors]):not([data-vgpu-fallback])[data-fading] [data-beam-bloom] {
   animation: beam-hue-shift-bloom 8s ease-in-out infinite;
 }
 
@@ -1725,5 +2126,6 @@ css += `
 }
 `
 
+writeFileSync(SHADER_OUT, generateBeamColorShader(), "utf8")
 writeFileSync(OUT, css, "utf8")
 console.log(`Wrote ${OUT} (${css.length} chars, ${css.split("\n").length} lines)`)
