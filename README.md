@@ -102,9 +102,10 @@ The CSS animation requires CSS Houdini `@property`:
 - Safari 15.4+
 - Firefox 128+
 
-Active non-mono rotate and line variants use WebGPU when available. If WebGPU
-is unavailable, they keep the generated CSS animation without throwing. Pulse
-variants continue to use the shared requestAnimationFrame driver.
+All animated variants use WebGPU when available. Static or mono palettes keep
+geometry and shader frame updates running while disabling hue rotation. If
+WebGPU is unavailable, the component keeps the generated CSS animation without
+throwing. Pulse variants continue to use the shared requestAnimationFrame driver.
 
 ## Differences from Jakubantalik/border-beam
 

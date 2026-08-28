@@ -21,11 +21,11 @@ Feature: GPU-accelerated border beam color rendering
     Then the beam keeps its generated CSS color layers and masks
     And the component remains usable without throwing or an unhandled rejection
 
-  Scenario: Static colors render once without a color animation loop
-    Given a border beam opts into static colors or uses the mono variant
-    When the beam is rendered
-    Then vgpu renders its static palette once
-    And no vgpu color animation loop is started
+  Scenario: Static colors keep geometry moving
+    Given an active beam uses a static or mono color palette
+    When its color hue is fixed
+    Then vgpu continues rendering its configured geometry animation
+    And only the color rotation remains disabled
 
   Scenario: GPU resources are cleaned up after unmount
     Given an active beam has initialized its vgpu color layers
