@@ -6,7 +6,7 @@ Feature: GPU-accelerated border beam color rendering
     Given an active border beam uses an upstream border-beam palette
     When the vgpu renderer initializes in a browser with WebGPU
     Then vgpu renders separate stroke, inner, and bloom color layers
-    And CSS pseudo-element color backgrounds are disabled for that beam
+    And CSS preserves the upstream visual-composite layers for that beam
     And the beam's radius, masks, opacity, brightness, saturation, and motion remain intact
 
   Scenario: Every upstream size and variant has GPU color data

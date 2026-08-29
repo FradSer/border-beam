@@ -103,9 +103,11 @@ The CSS animation requires CSS Houdini `@property`:
 - Firefox 128+
 
 All animated variants use WebGPU when available. Static or mono palettes keep
-geometry and shader frame updates running while disabling hue rotation. If
-WebGPU is unavailable, the component keeps the generated CSS animation without
-throwing. Pulse variants continue to use the shared requestAnimationFrame driver.
+geometry and shader frame updates running while disabling hue rotation. The
+upstream CSS composite remains active, while vgpu provides the animated color
+pass. If WebGPU is unavailable, the component keeps the generated CSS
+animation without throwing. Pulse variants use the shared requestAnimationFrame
+driver only when the GPU renderer is unavailable.
 
 ## Differences from Jakubantalik/border-beam
 
@@ -118,7 +120,8 @@ re-implements the runtime:
   geometry.
 - One shared browser GPU context and frame loop serve all beam canvases. A
   missing WebGPU adapter falls back to the generated CSS animation.
-- Pulse breathing still uses the existing shared CSS custom-property driver.
+- The upstream CSS visual composite remains intact; the shared pulse driver is
+  used as the non-GPU fallback.
 - The registry ships the renderer, WGSL source, and `vgpu` dependency metadata.
 
 ## Customizing
