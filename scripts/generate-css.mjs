@@ -1401,14 +1401,6 @@ let css = `/*
 [data-beam] [data-beam-bloom] {
   display: none;
 }
-[data-beam]:not([data-vgpu-colors]) [data-beam-color-layer] {
-  display: none;
-}
-[data-beam][data-vgpu-colors]::before,
-[data-beam][data-vgpu-colors]::after,
-[data-beam][data-vgpu-colors] [data-beam-bloom] {
-  display: none !important;
-}
 [data-beam] [data-beam-color-layer] {
   display: block;
   position: absolute;
@@ -1425,212 +1417,19 @@ let css = `/*
   );
   filter: brightness(var(--beam-brightness, 1)) saturate(var(--beam-saturation, 1));
   mix-blend-mode: normal;
+  -webkit-mask: ${STROKE_MASK};
+  mask: ${STROKE_MASK};
 }
-
-/* stroke layer */
-[data-beam][data-vgpu-colors]:not([data-size="line"]):not([data-size="pulse-outside"]) [data-beam-color-layer="stroke"] {
+[data-beam][data-vgpu-colors] [data-beam-color-layer] {
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
-  border-radius: var(--beam-inner-radius, 15px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 2;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-stroke-opacity, 0.48)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
 }
-
-[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer="stroke"] {
-  -webkit-mask: ${LINE_MASK}, linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: source-in, xor;
-  mask: ${LINE_MASK}, linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: intersect, exclude;
-  padding: 1px;
-  border-radius: var(--beam-inner-radius, 15px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 2;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-edge)
-    * var(--beam-stroke-opacity, 0.72)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="pulse-outside"] [data-beam-color-layer="stroke"] {
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  border-radius: var(--beam-inner-radius, 15px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 2;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-stroke-opacity, 0.94)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-/* inner layer */
-[data-beam][data-vgpu-colors][data-size="md"] [data-beam-color-layer="inner"] {
-  -webkit-mask-image:
-    ${STROKE_MASK},
-    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
-    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
-  -webkit-mask-composite: source-in, source-over;
-  mask-image:
-    ${STROKE_MASK},
-    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
-    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
-  mask-composite: intersect, add;
-  border-radius: var(--beam-radius, 16px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 1;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-inner-opacity, 0.7)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="sm"] [data-beam-color-layer="inner"] {
-  -webkit-mask-image: ${SMALL_INNER_MASK};
-  -webkit-mask-composite: source-over;
-  mask-image: ${SMALL_INNER_MASK};
-  mask-composite: add;
-  border-radius: var(--beam-radius, 16px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 1;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-inner-opacity, 0.7)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer="inner"] {
-  -webkit-mask-image:
-    ${LINE_MASK},
-    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
-    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
-  -webkit-mask-composite: source-in, source-over;
-  mask-image:
-    ${LINE_MASK},
-    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
-    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
-  mask-composite: intersect, add;
-  border-radius: var(--beam-radius, 16px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 1;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-edge)
-    * var(--beam-inner-opacity, 0.7)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="pulse-inner"] [data-beam-color-layer="inner"] {
-  -webkit-mask-image:
-    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
-    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
-  -webkit-mask-composite: source-over;
-  mask-image:
-    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
-    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
-  mask-composite: add;
-  border-radius: var(--beam-radius, 16px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  z-index: 1;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-inner-opacity, 0.44)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="pulse-outside"] [data-beam-color-layer="inner"] {
-  inset: -10px;
-  width: calc(100% + 20px);
-  height: calc(100% + 20px);
-  border-radius: calc(var(--beam-radius, 16px) + 10px);
-  -webkit-mask: none;
-  mask: none;
-  z-index: -1;
-  filter: blur(var(--beam-core-blur, 3px)) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-inner-opacity, 0.34)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-/* bloom layer */
-[data-beam][data-vgpu-colors]:not([data-size="line"]):not([data-size="pulse-outside"]) [data-beam-color-layer="bloom"] {
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1px;
-  border-radius: var(--beam-inner-radius, 15px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  filter: blur(8px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
-  z-index: 3;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-bloom-opacity, 0.8)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer="bloom"] {
-  -webkit-mask: ${LINE_BLOOM_MASK};
-  -webkit-mask-composite: source-over;
-  mask: ${LINE_BLOOM_MASK};
-  mask-composite: add;
-  border-radius: var(--beam-inner-radius, 15px);
-  clip-path: inset(0 round var(--beam-radius, 16px));
-  filter: blur(8px) brightness(var(--beam-brightness, 1.3)) saturate(var(--beam-saturation, 1));
-  z-index: 3;
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-edge)
-    * var(--beam-bloom-opacity, 0.8)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
-}
-
-[data-beam][data-vgpu-colors][data-size="pulse-outside"] [data-beam-color-layer="bloom"] {
-  inset: -30px;
-  width: calc(100% + 60px);
-  height: calc(100% + 60px);
-  border-radius: calc(var(--beam-radius, 16px) + 30px);
-  -webkit-mask: none;
-  mask: none;
-  z-index: -1;
-  filter: blur(var(--beam-bloom-blur, 22.5px)) brightness(var(--beam-glow-brightness, 1.9)) saturate(var(--beam-glow-saturate, 1.2));
-  opacity: calc(
-    var(--beam-opacity)
-    * var(--beam-bloom-opacity, 0.3)
-    * var(--beam-mono-multiplier, 1)
-    * var(--beam-strength, 1)
-  );
+[data-beam][data-vgpu-colors][data-size="line"] [data-beam-color-layer] {
+  -webkit-mask: ${LINE_MASK};
+  mask: ${LINE_MASK};
 }
 
 /* ---- border/sm/md animation rules ---- */

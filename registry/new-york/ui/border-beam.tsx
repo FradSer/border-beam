@@ -358,7 +358,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     // Drive the pulse breathing from the shared, fps-capped rAF loop while the
     // instance is on, onscreen, and the user hasn't requested reduced motion.
     useEffect(() => {
-      if (!driverConfig) return
+      if (!driverConfig || gpuColorsActive) return
       if (!(phase === "active" || phase === "fading") || !isVisible) return
 
       const el = internalRef.current
@@ -372,7 +372,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
       }
 
       return registerPulseInstance(el, driverConfig)
-    }, [driverConfig, phase, isVisible])
+    }, [driverConfig, gpuColorsActive, phase, isVisible])
 
     const beamStyle: CSSProperties = {
       ...style,
