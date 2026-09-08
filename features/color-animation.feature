@@ -33,6 +33,15 @@ Feature: GPU-accelerated border beam color rendering
     Then its vgpu canvas layers remain initialized
     And its animation frame loop resumes without a blank fallback frame
 
+  Scenario: Pulse composite keeps breathing after GPU initialization
+    Given an active visible pulse-inner or pulse-outside beam has initialized WebGPU
+    And the visitor has not requested reduced motion
+    When successive animation frames render
+    Then the preserved CSS composite's breathing geometry continues changing
+    And a mono palette disables hue rotation without freezing breathing
+    When the visitor hides effects
+    Then the breathing driver stops after fade-out
+
   Scenario: GPU resources are cleaned up after unmount
     Given an active beam has initialized its vgpu color layers
     When the beam is unmounted or React Strict Mode remounts it

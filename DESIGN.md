@@ -174,7 +174,7 @@ The design system presents the animated border-beam component as a high-precisio
 
 **Key Characteristics:**
 - Dark technical surfaces with monospace status telemetry and live inspection cards.
-- Live WebGPU execution highlighted with green and blue status badges.
+- Rendering capabilities described without unverified adapter or compilation status badges.
 - Clean component composition without redundant decorative borders.
 - Monospace readouts and badges for parameters, shader names, and metrics.
 
@@ -216,7 +216,9 @@ A restrained monochrome technical palette with semantic accents for WebGPU adapt
 
 ## Layout
 
-A balanced 1120px centered workbench shell. The hero uses an asymmetric two-column grid (copy left, oversized live preview right). The inspector uses a split layout (render target left, multi-tab inspector panel right). The playground uses a persistent side controls panel beside the live stage.
+A 1120px content area inside a 1200px shell. A compact editorial introduction leads directly into the workbench: Rotate/Pulse tabs, a live specimen, and a persistent parameter panel. Usage code sits beneath the preview. A two-column wrapper gallery and registry installation section complete the page. Below 640px the stage and parameters stack; toolbar controls wrap when needed. The decorative beam retains the chromatic emphasis while the shell uses neutral ink and warm white themes.
+
+The page is composed in `app/page.tsx` with focused modules in `components/showcase/`: playground, wrapper examples, and clipboard/code presentation. Page tokens and responsive rules live in `app/globals.css`. Missing shadcn semantic tokens (accent, input, secondary, ring) are explicitly mapped. Renderer implementation and generated registry assets remain unchanged.
 
 ## Elevation & Depth
 
@@ -251,6 +253,8 @@ Surfaces rely on subtle tonal layering (`#0b0d10` canvas to `#12151a` card) and 
 - **Do** compose all page elements using official shadcn primitives (`Button`, `Card`, `Badge`, `Separator`, `Tabs`, `Slider`, `Label`).
 - **Do** provide clear feedback when copying install or playground code.
 - **Do** preserve the live 3-pass vgpu rendering execution on every active beam.
+- **Do** label effect visibility honestly: Hide effects disables beams; it is not a pause-at-current-frame control.
+- **Do** show copy success only after clipboard writes succeed and provide persistent manual-copy guidance on failure.
 
 ### Don't:
 - **Don't** add raw colorful backgrounds to container cards that compete with the border-beam color field.
