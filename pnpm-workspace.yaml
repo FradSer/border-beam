@@ -3,3 +3,20 @@ allowBuilds:
   esbuild: true
   unrs-resolver: false
   webgpu: false
+overrides:
+  # VGPU pins the MCP authoring server; keep its browser runtime at 0.3.1.
+  'vgpu@0.3.1>@modelcontextprotocol/server': '2.3.1'
+# Keep this reviewed Next.js patch installable during pnpm's release waiting period.
+minimumReleaseAgeExclude:
+  - '@next/env@16.4.3'
+  - '@next/eslint-plugin-next@16.4.3'
+  - '@next/swc-darwin-arm64@16.4.3'
+  - '@next/swc-darwin-x64@16.4.3'
+  - '@next/swc-linux-arm64-gnu@16.4.3'
+  - '@next/swc-linux-arm64-musl@16.4.3'
+  - '@next/swc-linux-x64-gnu@16.4.3'
+  - '@next/swc-linux-x64-musl@16.4.3'
+  - '@next/swc-win32-arm64-msvc@16.4.3'
+  - '@next/swc-win32-x64-msvc@16.4.3'
+  - eslint-config-next@16.4.3
+  - next@16.4.3
