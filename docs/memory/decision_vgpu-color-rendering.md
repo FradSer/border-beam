@@ -4,7 +4,7 @@ category: decision
 summary: border-beam uses vgpu for the dynamic color layer while preserving static CSS geometry and fallback
 source: border-beam
 created: 2026-08-28
-updated: 2026-08-28
+updated: 2026-10-24
 ---
 
 ## Fact
@@ -15,10 +15,16 @@ All animated border, line, and pulse variants render a dynamic color pass with v
 
 - `registry/new-york/ui/beam-color.wgsl` is the shader source; validate it with `npx vgpu check ... --require-validation`.
 - `registry/new-york/ui/beam-color-renderer.ts` owns the shared browser GPU context and frame loop, and reference-counts each canvas surface for React Strict Mode cleanup.
-- `next.config.ts` registers the vgpu WGSL loader for Turbopack, and `vgpu-env.d.ts` provides WGSL/WebGPU types.
+- `scripts/generate-css.mjs` uses the official pinned vgpu loader at registry build time to generate `beam-color-shader.ts` from the same WGSL. The renderer imports that TypeScript module and a bundled vgpu browser runtime with self-contained internal types. Consuming Next.js projects need no WGSL loader, config change, project-level type declaration, or native build approval.
 - `scripts/generate-css.mjs` remains the CSS source of truth. Generated `border-beam.css` retains the upstream visual-composite layers when `data-vgpu-colors` is active, while the shader advances geometry and color time for every animated palette.
-- Registry metadata includes `vgpu` and ships the renderer plus WGSL file.
+- Pin `vgpu@0.3.1` as an authoring dependency and generate the browser runtime at registry build time. Do not install its Node adapter dependency tree in consumer apps: pnpm 12 rejects the native build scripts. Preserve upstream licenses in the generated browser runtime. Keep raw WGSL in the repository for validation; do not install it as an application module.
 
 ## Verification
 
-`pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build`, `pnpm registry:build`, `npx vgpu check registry/new-york/ui/beam-color.wgsl --require-validation`, and an agent-browser WebGPU smoke test all passed.
+Verified on 2026-10-24:
+
+- `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`, and `pnpm registry:build` passed. All nine local regressions passed, including the browser GPU path, live reduced-motion changes, stable SSR markup, and reproducible shader/runtime packaging.
+- A fresh `node:24-bookworm` Docker run installed the public registry with the exact README command into default and `src/` Next.js projects. Node 24.22.1, pnpm 12.15.0, Next.js 16.4.2, and shadcn 4.22.1 passed both type checks and production builds. Next.js configuration stayed byte-for-byte unchanged; no project-level ambient declarations or GPU package dependencies were added.
+- All four Docker browser tests passed. They cover all five presets, palette changes, hide/show, and functional CSS fallback with actual gradients, masks, opacity, and animation. Docker exposed WebGPU but had no adapter, so GPU-path evidence comes from the separate local browser regression.
+- The public endpoint matches generated registry SHA-256 `b2a385f85a07c07e00e70b8b0c6aed28005cea74c2afec8d93bc8b129ce2040e`. Vercel deployment `dpl_61cTR3oQPZgrSR7NFaWB2eq7Gz2n` was promoted to `https://border-beam.vercel.app` before the final public Docker run.
+- Browser bundle and installation-contract changes received an independent review. Full Docker logs, traces, screenshots, and results are in `/tmp/border-beam-zero-config-public-pnpm12-20261024/` on the verification host.

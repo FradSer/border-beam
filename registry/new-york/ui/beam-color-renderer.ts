@@ -1,5 +1,5 @@
-import { clock, effect, frame, frameLoop, init, surface } from "vgpu"
-import beamColorShader from "./beam-color.wgsl"
+import { clock, effect, frame, frameLoop, init, surface } from "./beam-vgpu.js"
+import beamColorShader from "./beam-color-shader"
 
 import type { BorderBeamColorVariant, BorderBeamSize } from "./border-beam"
 

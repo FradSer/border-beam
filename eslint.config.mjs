@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "registry/new-york/ui/beam-vgpu.js",
   ]),
 ]);
 

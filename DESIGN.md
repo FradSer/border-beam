@@ -29,22 +29,22 @@ colors:
 typography:
   display:
     fontFamily: "var(--font-geist-sans), sans-serif"
-    fontSize: "clamp(3.3rem, 6vw, 6.2rem)"
-    fontWeight: 600
-    lineHeight: 0.87
-    letterSpacing: "-0.075em"
+    fontSize: "clamp(2.8rem, 5vw, 4rem)"
+    fontWeight: 500
+    lineHeight: 1.08
+    letterSpacing: "-0.04em"
   display-mobile:
     fontFamily: "var(--font-geist-sans), sans-serif"
-    fontSize: "clamp(3.3rem, 18vw, 5.4rem)"
-    fontWeight: 600
-    lineHeight: 0.87
-    letterSpacing: "-0.075em"
+    fontSize: "clamp(2.6rem, 11vw, 4rem)"
+    fontWeight: 500
+    lineHeight: 1.08
+    letterSpacing: "-0.04em"
   display-specimen:
     fontFamily: "var(--font-geist-sans), sans-serif"
-    fontSize: "clamp(1.8rem, 4vw, 3.6rem)"
-    fontWeight: 600
-    lineHeight: 0.92
-    letterSpacing: "-0.065em"
+    fontSize: "32px"
+    fontWeight: 500
+    lineHeight: 1.15
+    letterSpacing: "-0.035em"
   display-chat:
     fontFamily: "var(--font-geist-sans), sans-serif"
     fontSize: "clamp(18px, 3vw, 29px)"
@@ -208,7 +208,7 @@ A restrained monochrome technical palette with semantic accents for WebGPU adapt
 **Character:** Modern geometric sans with tight negative tracking for headlines, paired with a clean monospace face for technical telemetry and code.
 
 ### Hierarchy
-- **Display** (600 weight, clamp(3.3rem, 6vw, 6.2rem), 0.87 line-height, -0.075em tracking): Primary hero title.
+- **Display** (500 weight, clamp(2.8rem, 5vw, 4rem), 1.08 line-height, -0.04em tracking): Compact primary title that keeps the complete preview card visible on a 1280 by 800 viewport.
 - **Headline** (550 weight, 27px, 1.2 line-height, -0.05em tracking): Section titles.
 - **Title** (600 weight, 18px, 1.3 line-height, -0.03em tracking): Card and panel titles.
 - **Body** (400 weight, 15px, 1.7 line-height, normal tracking): Descriptions and narrative copy.
@@ -216,9 +216,11 @@ A restrained monochrome technical palette with semantic accents for WebGPU adapt
 
 ## Layout
 
-A 1120px content area inside a 1200px shell. A compact editorial introduction leads directly into the workbench: Rotate/Pulse tabs, a live specimen, and a persistent parameter panel. Usage code sits beneath the preview. A two-column wrapper gallery and registry installation section complete the page. Below 640px the stage and parameters stack; toolbar controls wrap when needed. The decorative beam retains the chromatic emphasis while the shell uses neutral ink and warm white themes.
+A 1120px content area inside a 1200px shell. A compact introduction leads directly into the workbench: Rotate/Pulse tabs, a live specimen, and a persistent parameter panel. The usage disclosure starts closed and includes imports, theme, strength, duration, and active state. A two-column gallery offers all eight Rotate/Pulse wrappers and matching registry commands. Below 640px the stage and parameters stack; toolbar controls wrap when needed. The decorative beam retains the chromatic emphasis while the shell uses neutral ink and warm white themes.
 
-The page is composed in `app/page.tsx` with focused modules in `components/showcase/`: playground, wrapper examples, and clipboard/code presentation. Page tokens and responsive rules live in `app/globals.css`. Missing shadcn semantic tokens (accent, input, secondary, ring) are explicitly mapped. Renderer implementation and generated registry assets remain unchanged.
+The page is composed in `app/page.tsx` with focused modules in `components/showcase/`: playground, wrapper examples, and clipboard/code presentation. Page tokens and responsive rules live in `app/globals.css`. shadcn semantic tokens (accent, input, secondary, ring) are explicitly mapped. The header, preview, footer, document metadata, README, and license identify the registry author as Frad; retain the original effect attribution to Jakub Antalik.
+
+Theme selection persists locally and initializes before hydration. Effect families retain their presets; Reset restores the initial configuration. Copy success clears after two seconds or a snippet change, while clipboard errors retain manual-copy guidance. Reduced motion retains a static visible border and responds to live system preference changes.
 
 ## Elevation & Depth
 

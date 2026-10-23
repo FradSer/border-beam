@@ -1,18 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Check, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function CopyCode({ value, label }: { value: string; label: string }) {
-  const [status, setStatus] = useState<"idle" | "copying" | "copied" | "error">("idle")
+  const [feedback, setFeedback] = useState<{ value: string; status: "copying" | "copied" | "error" } | null>(null)
+  const status = feedback?.value === value ? feedback.status : "idle"
+  useEffect(() => {
+    if (feedback?.status !== "copied") return
+    const timeout = window.setTimeout(() => setFeedback(null), 2000)
+    return () => window.clearTimeout(timeout)
+  }, [feedback])
   async function copy() {
-    setStatus("copying")
+    setFeedback({ value, status: "copying" })
     try {
       await navigator.clipboard.writeText(value)
-      setStatus("copied")
+      setFeedback({ value, status: "copied" })
     } catch {
-      setStatus("error")
+      setFeedback({ value, status: "error" })
     }
   }
   return (

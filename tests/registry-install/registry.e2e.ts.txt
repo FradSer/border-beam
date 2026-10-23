@@ -1,0 +1,95 @@
+import { test } from "@e2e-dev/web"
+import { expect } from "e2e"
+import fs from "node:fs/promises"
+
+const sizes = ["md", "sm", "line", "pulse-inner", "pulse-outside"]
+
+test("installed component renders all presets and responds to controls", async ({ app, screen, browser }) => {
+  await app.open("/")
+  await expect(screen.getByRole("heading", { name: "Registry installation" })).toBeVisible()
+  for (const size of sizes) {
+    await expect(screen.getByTestId(`beam-${size}`)).toBeVisible()
+    await expect(screen.getByTestId(`beam-${size}`)).toHaveAttribute("data-active")
+  }
+  const runtime = await browser.evaluate(async () => {
+    const gpu = navigator.gpu
+    const adapter = gpu ? await gpu.requestAdapter() : null
+    return {
+      url: location.href,
+      gpuAvailable: !!gpu,
+      adapterAvailable: !!adapter,
+      beamCount: document.querySelectorAll("[data-beam]").length,
+    }
+  })
+  await fs.writeFile(`/work/evidence/browser-runtime-${new URL(runtime.url).port}.json`, JSON.stringify(runtime, null, 2))
+  expect(runtime.beamCount).toBe(5)
+  await screen.getByRole("button", { name: "Switch palette", exact: true }).tap()
+  for (const size of sizes) {
+    await expect(screen.getByTestId(`beam-${size}`)).toHaveAttribute("data-variant", "ocean")
+  }
+  await screen.getByRole("button", { name: "Hide effects", exact: true }).tap()
+  for (const size of sizes) {
+    await expect(screen.getByTestId(`beam-${size}`)).not.toHaveAttribute("data-active")
+    await expect(screen.getByTestId(`beam-${size}`)).not.toHaveAttribute("data-fading")
+  }
+  await screen.getByRole("button", { name: "Show effects", exact: true }).tap()
+  for (const size of sizes) {
+    await expect(screen.getByTestId(`beam-${size}`)).toHaveAttribute("data-active")
+  }
+  await app.screenshot("installed-presets")
+})
+
+test("installed component keeps CSS fallback functional without WebGPU", async ({ app, screen, browser }) => {
+  await browser.addInitScript(() => {
+    Object.defineProperty(navigator, "gpu", { configurable: true, value: undefined })
+  })
+  await app.open("/")
+  await expect(screen.getByTestId("beam-pulse-inner")).toHaveAttribute("data-vgpu-fallback")
+  const fallback = await browser.evaluate(() => new Promise<{
+    pulseWidths: string[]
+    borderAngles: string[]
+    styles: { size: string; content: string; background: string; mask: string; opacity: number; animation: string }[]
+  }>(resolve => {
+    const element = document.querySelector('[data-testid="beam-pulse-inner"]')! as HTMLElement
+    const border = document.querySelector('[data-testid="beam-md"]')! as HTMLElement
+    const values: string[] = []
+    const angles: string[] = []
+    let start: number
+    function sample(time: number) {
+      start ??= time
+      values.push(element.style.getPropertyValue("--bw1"))
+      angles.push(getComputedStyle(border).getPropertyValue("--beam-angle"))
+      if (time - start < 500) requestAnimationFrame(sample)
+      else resolve({
+        pulseWidths: [...new Set(values)],
+        borderAngles: [...new Set(angles)],
+        styles: [...document.querySelectorAll<HTMLElement>("[data-beam]")].map(root => {
+          const stroke = getComputedStyle(root, "::after")
+          return {
+            size: root.dataset.size!,
+            content: stroke.content,
+            background: stroke.backgroundImage,
+            mask: stroke.maskImage,
+            opacity: Number(stroke.opacity),
+            animation: getComputedStyle(root).animationName,
+          }
+        }),
+      })
+    }
+    requestAnimationFrame(sample)
+  }))
+  expect(fallback.pulseWidths.length).toBeGreaterThan(1)
+  expect(fallback.pulseWidths.every(Boolean)).toBe(true)
+  // Inline driver values alone do not prove the installed stylesheet works.
+  expect(fallback.borderAngles.length).toBeGreaterThan(1)
+  expect(fallback.styles).toHaveLength(sizes.length)
+  for (const style of fallback.styles) {
+    expect(style.content).toBe('\"\"')
+    expect(style.background).toContain("gradient(")
+    expect(style.mask).toContain("gradient(")
+    // The traveling line intentionally disappears at the ends of its cycle.
+    if (style.size !== "line") expect(style.opacity).toBeGreaterThan(0.1)
+    if (style.size === "md" || style.size === "sm") expect(style.animation).toContain("beam-spin")
+    if (style.size === "line") expect(style.animation).toContain("beam-travel")
+  }
+})

@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type AnimationEvent,
   type CSSProperties,
   type HTMLAttributes,
@@ -55,24 +56,26 @@ const SIZE_DEFAULT_RADIUS: Record<BorderBeamSize, number> = {
   "pulse-outside": 16,
 }
 
-function useSystemTheme(enabled: boolean): "dark" | "light" {
-  const [sysTheme, setSysTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark"
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light"
-  })
-
-  useEffect(() => {
-    if (!enabled) return
-    const mq = window.matchMedia("(prefers-color-scheme: dark)")
-    const handler = (e: MediaQueryListEvent) =>
-      setSysTheme(e.matches ? "dark" : "light")
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [enabled])
-
-  return sysTheme
+function useMediaQuery(
+  query: string,
+  enabled = true,
+  serverValue = false
+): boolean {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!enabled) return () => undefined
+      const media = window.matchMedia(query)
+      media.addEventListener("change", onChange)
+      return () => media.removeEventListener("change", onChange)
+    },
+    [enabled, query]
+  )
+  const getSnapshot = useCallback(
+    () => enabled ? window.matchMedia(query).matches : serverValue,
+    [enabled, query, serverValue]
+  )
+  const getServerSnapshot = useCallback(() => serverValue, [serverValue])
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }
 
 export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
@@ -99,6 +102,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     },
     forwardedRef
   ) {
+    const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
     const internalRef = useRef<HTMLDivElement | null>(null)
     const [phase, setPhase] = useState<"idle" | "active" | "fading">(
       active ? "active" : "idle"
@@ -108,7 +112,9 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
     // calling setState from an effect (avoids the extra render pass).
     if (active !== prevActive) {
       setPrevActive(active)
-      setPhase(active ? "active" : "fading")
+      setPhase(active ? "active" : reducedMotion ? "idle" : "fading")
+    } else if (reducedMotion && phase === "fading") {
+      setPhase("idle")
     }
     const [detectedRadius, setDetectedRadius] = useState<number | null>(null)
     const [isVisible, setIsVisible] = useState(true)
@@ -122,8 +128,32 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
 
     const isPulse = size === "pulse-inner" || size === "pulse-outside"
 
-    const systemTheme = useSystemTheme(theme === "auto")
+    const systemTheme = useMediaQuery(
+      "(prefers-color-scheme: dark)",
+      theme === "auto",
+      true
+    ) ? "dark" : "light"
     const resolvedTheme = theme === "auto" ? systemTheme : (theme ?? "dark")
+    const callbacksRef = useRef({ onActivate, onDeactivate })
+    const activationNotifiedRef = useRef(false)
+    const previousLifecycleRef = useRef({ active, phase })
+
+    useEffect(() => {
+      callbacksRef.current = { onActivate, onDeactivate }
+    }, [onActivate, onDeactivate])
+
+    useEffect(() => {
+      const previous = previousLifecycleRef.current
+      previousLifecycleRef.current = { active, phase }
+      if (phase !== "active") activationNotifiedRef.current = false
+      if (!reducedMotion) return
+      if (!active && (previous.active || previous.phase === "fading")) {
+        callbacksRef.current.onDeactivate?.()
+      } else if (phase === "active" && !activationNotifiedRef.current) {
+        activationNotifiedRef.current = true
+        callbacksRef.current.onActivate?.()
+      }
+    }, [active, phase, reducedMotion])
 
     useEffect(() => {
       isVisibleRef.current = isVisible
@@ -208,7 +238,10 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
           setPhase("idle")
           onDeactivate?.()
         } else if (name.includes("fade-in")) {
-          onActivate?.()
+          if (!activationNotifiedRef.current) {
+            activationNotifiedRef.current = true
+            onActivate?.()
+          }
         }
         consumerOnAnimationEnd?.(e)
       },
@@ -252,11 +285,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
         theme: resolvedTheme,
         staticColors: finalStaticColors,
         pulseGlowScale,
-        reducedMotion:
-          typeof window !== "undefined" &&
-          window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-            ? true
-            : false,
+        reducedMotion,
       }),
       [
         brightness,
@@ -266,6 +295,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
         finalStaticColors,
         pulseGlowScale,
         resolvedTheme,
+        reducedMotion,
         saturation,
         size,
       ]
@@ -364,15 +394,10 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(
       const el = internalRef.current
       if (!el) return
 
-      if (
-        typeof window !== "undefined" &&
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-      ) {
-        return
-      }
+      if (reducedMotion) return
 
       return registerPulseInstance(el, driverConfig)
-    }, [driverConfig, phase, isVisible])
+    }, [driverConfig, phase, isVisible, reducedMotion])
 
     const beamStyle: CSSProperties = {
       ...style,

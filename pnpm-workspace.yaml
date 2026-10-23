@@ -1,0 +1,5 @@
+allowBuilds:
+  '@vgpu/adapter-node': false
+  esbuild: true
+  unrs-resolver: false
+  webgpu: false

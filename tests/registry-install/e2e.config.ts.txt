@@ -1,0 +1,24 @@
+import type { E2EConfig } from "e2e"
+import { web } from "@e2e-dev/web"
+
+export default {
+  targets: ["default", "src"].map((layout, index) => ({
+    name: `docker-${layout}`,
+    engine: web({ viewport: { width: 1440, height: 1000 } }),
+    app: {
+      url: `http://127.0.0.1:${3100 + index}`,
+      command: {
+        executable: "pnpm",
+        args: ["start", "--port", String(3100 + index)],
+        cwd: `/work/consumer-${layout}`,
+        env: { NEXT_TELEMETRY_DISABLED: "1" },
+        log: `.e2e/${layout}-app.log`,
+      },
+    },
+  })),
+  tests: ["tests/**/*.e2e.ts"],
+  output: ".e2e",
+  workers: 1,
+  trace: "on",
+  video: "on",
+} satisfies E2EConfig

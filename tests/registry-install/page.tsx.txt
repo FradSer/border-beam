@@ -1,0 +1,30 @@
+"use client"
+
+import { useState } from "react"
+import { BorderBeam, type BorderBeamSize } from "@/components/ui/border-beam"
+
+const sizes: BorderBeamSize[] = ["md", "sm", "line", "pulse-inner", "pulse-outside"]
+
+export default function Page() {
+  const [active, setActive] = useState(true)
+  const [ocean, setOcean] = useState(false)
+
+  return (
+    <main style={{ padding: 48, background: "#0c0d0f", color: "#fff", minHeight: "100vh" }}>
+      <h1>Registry installation</h1>
+      <button onClick={() => setActive(!active)}>{active ? "Hide effects" : "Show effects"}</button>
+      <button onClick={() => setOcean(!ocean)}>Switch palette</button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 48, paddingTop: 48 }}>
+        {sizes.map(size => (
+          <BorderBeam key={size} data-testid={`beam-${size}`} size={size} theme="dark"
+            colorVariant={ocean ? "ocean" : "colorful"} active={active}>
+            <div style={{ width: 240, padding: 32, borderRadius: 16, background: "#141518" }}>
+              <h2>{size}</h2>
+              <p>Installed with shadcn.</p>
+            </div>
+          </BorderBeam>
+        ))}
+      </div>
+    </main>
+  )
+}

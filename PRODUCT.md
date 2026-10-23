@@ -35,8 +35,9 @@ Developers install components with the shadcn CLI and use them in React applicat
 - Support `colorful`, `mono`, `ocean`, and `sunset` variants with dark, light, and automatic theme handling.
 - Use vgpu to render the complete color layers, including stroke, inner, and bloom data, from WGSL.
 - Keep CSS responsible for layout, masks, clipping, opacity, stacking, and fade behavior.
-- Generate CSS and WGSL from palette data in `scripts/generate-css.mjs`; do not edit generated CSS directly.
+- Generate CSS, WGSL, and the installable TypeScript shader module from palette data in `scripts/generate-css.mjs`; do not edit generated artifacts directly.
 - Distribute the component through shadcn registry JSON in `public/r/`.
+- Install into initialized Next.js projects without changing bundler configuration, adding project-level WGSL/WebGPU declarations, or approving native dependency scripts. Ship generated shader and browser runtime modules with self-contained internal types and upstream license notices.
 - Use a shared browser GPU context and frame loop for multiple instances.
 - Provide a usable CSS fallback when WebGPU or a GPU adapter is unavailable.
 - Respect reduced-motion preferences and keep decorative layers out of the accessibility tree.
@@ -54,6 +55,7 @@ Developers install components with the shadcn CLI and use them in React applicat
 - `registry/new-york/ui/border-beam.tsx` — component API and behavior.
 - `registry/new-york/ui/border-beam.css` — generated CSS layers and masks.
 - `registry/new-york/ui/beam-color.wgsl` — generated GPU color shader.
+- `registry/new-york/ui/beam-color-shader.ts` — generated, loader-free shader module installed by the registry.
 - `registry/new-york/ui/beam-color-renderer.ts` — vgpu runtime and lifecycle management.
 - `registry/new-york/ui/pulse-driver.ts` — shared pulse motion driver.
 - `scripts/generate-css.mjs` — palette, CSS, and WGSL source of truth.

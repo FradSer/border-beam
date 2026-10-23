@@ -1,0 +1,9 @@
+# Local agent state and generated caches do not belong in deployments.
+.git-agent
+.memory
+.impeccable
+*.tsbuildinfo
+next-env.d.ts
+.env*
+*.pem
+*.key

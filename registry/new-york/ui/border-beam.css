@@ -1915,6 +1915,12 @@
 /* ---- pulse reduced-motion ---- */
 
 @media (prefers-reduced-motion: reduce) {
+  [data-beam][data-active] {
+    --beam-opacity: 1;
+  }
+  [data-beam][data-fading] {
+    --beam-opacity: 0;
+  }
   [data-beam][data-active],
   [data-beam][data-fading],
   [data-beam][data-active]::after,

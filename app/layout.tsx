@@ -13,9 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "border-beam",
+  title: "border-beam — by Frad",
   description:
-    "Animated border beam effect for shadcn with vgpu-powered color rendering and a static CSS fallback.",
+    "Animated borders for React and shadcn/ui, by Frad. Explore five presets, four palettes, and ready-to-use components with WebGPU rendering and a CSS fallback.",
+  authors: [{ name: "Frad", url: "https://github.com/FradSer" }],
+  creator: "Frad",
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({
@@ -25,6 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{document.documentElement.classList.toggle("dark",localStorage.getItem("border-beam-theme")!=="light")}catch{}` }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

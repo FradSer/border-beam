@@ -4,8 +4,8 @@ Feature: Border beam showcase experience
   Scenario: Visitor sees the component and controls immediately
     Given a visitor opens the border-beam demo on desktop
     When the page finishes loading
-    Then the header identifies border-beam and links to this project
-    And Rotate and Pulse tabs and the live preview are visible without scrolling
+    Then the header identifies border-beam by Frad and links to this project
+    And Rotate and Pulse tabs and the complete preview card are visible without scrolling on a 1280 by 800 viewport
     And the page does not claim an unverified GPU adapter status
 
   Scenario: Visitor switches effect families
@@ -16,15 +16,26 @@ Feature: Border beam showcase experience
     And the selected tab is announced accessibly
     When the visitor selects Rotate
     Then the preview uses the md preset
+    When the visitor selects a different preset and switches families twice
+    Then each family remembers its selected preset
 
   Scenario: Visitor explores a playground variant
     Given the playground is visible
-    When the visitor changes the effect type, color variant, or strength
+    When the visitor changes the effect type, color variant, strength, or cycle duration
     Then the preview updates to match the selected controls
-    And the generated usage snippet reflects the exact selected values and active state
+    And the generated usage snippet reflects the exact selected values, theme, and active state
     And effect-family navigation uses shadcn Tabs
     And option sets use shadcn ToggleGroup controls
     And strength uses a named shadcn Slider
+    And cycle duration uses a named shadcn Slider
+
+  Scenario: Visitor restores the initial configuration
+    Given the visitor has changed the playground configuration
+    When the visitor selects Reset
+    Then Rotate uses md and Pulse uses pulse-inner
+    And the palette is colorful, strength is 70 percent, and cycle duration is 2.3 seconds
+    And effects are enabled
+    And Reset is disabled until the configuration changes again
 
   Scenario: Visitor disables the decorative effect
     Given the beam effects are enabled
@@ -38,6 +49,7 @@ Feature: Border beam showcase experience
     When the clipboard write succeeds
     Then the copy control reports Copied
     And the snippet remains readable and keyboard accessible
+    And the feedback clears when the snippet changes or after two seconds
 
   Scenario: Clipboard access is denied
     Given an installation or usage snippet is visible
@@ -50,6 +62,9 @@ Feature: Border beam showcase experience
     Then button, card, input, and textarea wrappers are shown
     And editable fields have visible bound labels
     And each wrapper has its own registry installation command
+    When the visitor switches to Pulse wrappers
+    Then all four examples and installation commands use their pulse variants
+    And text entered in the input and textarea is preserved
 
   Scenario: Visitor uses a narrow screen or reduced motion
     Given the viewport is 320 CSS pixels wide
@@ -65,3 +80,5 @@ Feature: Border beam showcase experience
     Then the page and every preview use the light theme
     And the control offers Switch to dark theme
     And inactive family tabs remain readable with sufficient text contrast
+    When the visitor reloads the page
+    Then the selected theme is restored when browser storage is available
