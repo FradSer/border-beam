@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "border-beam — by Frad",
+  title: "border-beam — WGSL shaders for React, by Frad",
   description:
-    "Animated borders for React and shadcn/ui, by Frad. Explore five presets, four palettes, and ready-to-use components with WebGPU rendering and a CSS fallback.",
+    "WGSL-powered animated borders for React and shadcn/ui, by Frad. WebGPU color and glow, five presets, and a CSS fallback. Install with one command.",
   authors: [{ name: "Frad", url: "https://github.com/FradSer" }],
   creator: "Frad",
   icons: { icon: "/icon.svg" },

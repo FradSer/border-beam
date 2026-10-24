@@ -1,11 +1,17 @@
 # border-beam
 
-An animated border beam registry by [Frad](https://github.com/FradSer), built for
-shadcn. Refactored from
-[Jakubantalik/border-beam](https://github.com/Jakubantalik/border-beam) (MIT)
-into static, registry-native CSS with a vgpu-powered color renderer. No runtime
-`<style>` injection or per-instance `@property`; the package remains compatible
-with the upstream palette and keeps a static CSS fallback when WebGPU is unavailable.
+Animated borders for React and shadcn/ui, powered by **WGSL shaders and WebGPU**.
+Built by [Frad](https://github.com/FradSer).
+
+One WGSL (WebGPU Shading Language) fragment shader renders moving color and glow
+across three layers: stroke, inner glow, and bloom. A shared vgpu renderer runs
+the shader through WebGPU, while CSS preserves edge masks and compositing.
+The WGSL ships inside a generated TypeScript module: no shader loader setup is
+required. Browsers without a GPU adapter keep the animated CSS fallback.
+
+Refactored from [Jakubantalik/border-beam](https://github.com/Jakubantalik/border-beam)
+(MIT), preserving the upstream palette with registry-native CSS. No runtime
+`<style>` injection or per-instance `@property`.
 
 ## Install
 

@@ -129,6 +129,9 @@
 .copy-action { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .copy-error { max-width: 130px; color: var(--destructive); font-size: 11px; line-height: 1.6; }
 .workbench-footnote { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding-top: 16px; font-size: 11px; color: var(--muted-foreground); }
+.workbench-footnote a { display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-underline-offset: 3px; }
+.workbench-footnote a:hover { color: var(--foreground); }
+.workbench-footnote svg { width: 12px; height: 12px; }
 .page-section { padding: 72px 0; }
 .section-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 32px; }
 .section-heading h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 500; line-height: 1.2; letter-spacing: -.035em; }

@@ -41,7 +41,7 @@ function Installation() {
     <section id="installation" className="page-section installation" aria-labelledby="installation-title">
       <div className="section-heading"><div><h2 id="installation-title">Your next border.<br /><span>One command away.</span></h2></div><Button asChild variant="outline"><a href="https://github.com/FradSer/border-beam#usage" target="_blank" rel="noreferrer">Read the docs<ArrowUpRight data-icon="inline-end" /></a></Button></div>
       <div className="install-terminal"><div className="terminal-heading"><span>Install with shadcn</span><Badge variant="outline">React</Badge></div><CodeBlock value={installCommand} label="installation command" /></div>
-      <div className="install-notes"><p>Component, CSS, and shader module. In your codebase.</p><p>Ready for Next.js. No extra configuration.</p></div>
+      <div className="install-notes"><p>WGSL shader, component, and CSS. In your codebase.</p><p>Ready for Next.js. No extra configuration.</p></div>
     </section>
   )
 }
@@ -59,9 +59,9 @@ export default function Home() {
       <a className="skip-link" href="#main">Skip to playground</a>
       <Header dark={dark} onToggle={toggleTheme} />
       <main id="main" tabIndex={-1}>
-        <section className="intro" aria-labelledby="page-title"><div><h1 id="page-title">A little light.<br /><span>A better edge.</span></h1></div><div className="intro-aside"><p>Animated borders for React &amp; shadcn/ui.<br className="desktop-break" /> Tune the beam. Find your feel. Make it yours.</p><a href="#installation">Add to your project<ArrowDown aria-hidden="true" /></a></div></section>
+        <section className="intro" aria-labelledby="page-title"><div><h1 id="page-title">WGSL shaders.<br /><span>A better edge.</span></h1></div><div className="intro-aside"><p>Color and glow, written in WGSL.<br className="desktop-break" /> WebGPU rendering for React &amp; shadcn/ui.</p><a href="#installation">Add to your project<ArrowDown aria-hidden="true" /></a></div></section>
         <Playground theme={dark ? "dark" : "light"} active={active} onActiveChange={setActive} />
-        <div className="workbench-footnote"><span>Five presets. Four palettes. Your component.</span><span>WebGPU powered · CSS fallback</span></div>
+        <div className="workbench-footnote"><span>One WGSL shader. Stroke, inner glow, and bloom.</span><a href="https://github.com/FradSer/border-beam/blob/main/registry/new-york/ui/beam-color.wgsl" target="_blank" rel="noreferrer">Read the WGSL shader<ArrowUpRight aria-hidden="true" /></a><span>WebGPU rendering · CSS fallback</span></div>
         <Examples theme={dark ? "dark" : "light"} active={active} />
         <Separator />
         <Installation />

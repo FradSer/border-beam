@@ -22,7 +22,7 @@ The project publishes a reusable BorderBeam component and demonstrates it in an 
 
 ## Positioning
 
-The project combines upstream border-beam behavior and palette compatibility with static shadcn registry distribution and vgpu-powered color rendering. The color renderer must be able to fall back to CSS when WebGPU is unavailable.
+The project combines upstream border-beam behavior and palette compatibility with shadcn registry distribution and WGSL shaders executed through WebGPU. The homepage identifies WGSL as the source of the moving color and glow, links to the shader, and keeps installation simple. The color renderer must be able to fall back to CSS when WebGPU is unavailable.
 
 ## Operating Context
 
